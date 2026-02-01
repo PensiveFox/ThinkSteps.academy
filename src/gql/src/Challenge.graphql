@@ -1,0 +1,90 @@
+# Challenge Fragments
+fragment ChallengeFields on Challenge {
+  id
+  createdAt
+  updatedAt
+  subject
+  challengeType
+  difficulty
+  name
+  description
+  instructions
+  content
+  isPublished
+}
+
+fragment ChallengeStepFields on ChallengeStep {
+  id
+  createdAt
+  updatedAt
+  challengeId
+  order
+  title
+  description
+  validationType
+  validation
+  maxScore
+}
+
+fragment ChallengeCompletionFields on ChallengeCompletion {
+  id
+  createdAt
+  updatedAt
+  challengeId
+  userId
+  status
+  startedAt
+  completedAt
+  score
+  maxScore
+}
+
+fragment StepCompletionFields on StepCompletion {
+  id
+  createdAt
+  updatedAt
+  completionId
+  stepId
+  isCorrect
+  answer
+  feedback
+  score
+  attempts
+}
+
+# Queries
+query challenge($where: ChallengeWhereUniqueInput!) {
+  challenge(where: $where) {
+    ...ChallengeFields
+    steps {
+      ...ChallengeStepFields
+    }
+  }
+}
+
+query challenges(
+  $where: ChallengeWhereInput
+  $orderBy: ChallengeOrderByInput
+  $skip: Int
+  $take: Int
+) {
+  challenges(where: $where, orderBy: $orderBy, skip: $skip, take: $take) {
+    ...ChallengeFields
+  }
+}
+
+# Mutations
+mutation startChallenge($challengeId: String!) {
+  startChallenge(challengeId: $challengeId) {
+    ...ChallengeCompletionFields
+  }
+}
+
+mutation submitChallengeStep($input: SubmitChallengeStepInput!) {
+  submitChallengeStep(input: $input) {
+    isCorrect
+    feedback
+    score
+    attempts
+  }
+}

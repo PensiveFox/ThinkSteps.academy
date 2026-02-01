@@ -30,6 +30,7 @@ type LayoutProps = React.PropsWithChildren
 export const Layout: React.FC<LayoutProps> = ({ children, ...other }) => {
   const router = useRouter()
   const isHomePage = router.pathname === '/'
+  const isFullscreenPage = router.pathname.startsWith('/challenges/')
   const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const toggleSidebar = useCallback(() => {
@@ -83,10 +84,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, ...other }) => {
         </LayoutTopBar>
 
         <LayoutContentStyled $isHomePage={isHomePage}>
-          <LayoutInnerContainer>
-            {children}
-            {isHomePage && chatContent}
-          </LayoutInnerContainer>
+          {isFullscreenPage ? (
+            <>
+              {children}
+            </>
+          ) : (
+            <LayoutInnerContainer>
+              {children}
+              {isHomePage && chatContent}
+            </LayoutInnerContainer>
+          )}
         </LayoutContentStyled>
       </LayoutMain>
 

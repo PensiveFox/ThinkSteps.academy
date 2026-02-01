@@ -1,4 +1,4 @@
-import { shield, type IRules } from 'graphql-shield'
+import { shield, type IRules, allow } from 'graphql-shield'
 // import { isAuthenticated } from './rules/isAuthenticated'
 
 import type { Mutation, Query, User } from 'src/gql/generated/types'
@@ -49,4 +49,8 @@ export const permissions = shield(ruleTree, {
    * Allow use new Error() in resolvers
    */
   allowExternalErrors: true,
+  /**
+   * Allow all queries and mutations by default unless explicitly protected
+   */
+  fallbackRule: allow,
 })

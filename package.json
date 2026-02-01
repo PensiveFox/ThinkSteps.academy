@@ -57,6 +57,7 @@
     "@as-integrations/express4": "^1.1.2",
     "@hookform/resolvers": "^5.2.2",
     "@mdxeditor/editor": "^3.52.1",
+    "@monaco-editor/react": "^4.7.0",
     "@pothos/core": "^4.3.0",
     "@pothos/plugin-prisma": "^4.2.0",
     "@pothos/plugin-relay": "^4.3.0",
@@ -137,6 +138,9 @@
     "typescript-eslint": "^8.49.0",
     "vite": "^7.0.0",
     "vitest": "^4.0.15"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   },
   "msw": {
     "workerDirectory": [

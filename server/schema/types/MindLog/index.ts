@@ -15,6 +15,12 @@ export const MindLogType = builder.enumType('MindLogType', {
     'Identity',
     'Context',
     'Relationship',
+    'ChallengeStarted',
+    'ChallengeProgress',
+    'ChallengeCompleted',
+    'HintRequested',
+    'SolutionError',
+    'Achievement',
   ] as const,
 })
 
