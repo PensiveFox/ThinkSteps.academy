@@ -45,6 +45,8 @@ Startup kit for rapid deployment of learning agents with conversational experime
 cp docker/.env.sample docker/.env
 ```
 
+
+без BuildKit (DOCKER_BUILDKIT=0)
 2. Start database:
 ```bash
 cd docker

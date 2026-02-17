@@ -205,6 +205,32 @@ export const ChatForm = styled.form`
   border: 1px solid rgba(0, 0, 0, 0.06);
 `
 
+export const IconButton = styled.button<{ $active?: boolean }>`
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: ${({ $active }) => ($active ? '#ef4444' : '#f3f4f6')};
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  padding: 0;
+
+  &:hover {
+    background: ${({ $active }) => ($active ? '#dc2626' : '#e5e7eb')};
+    transform: scale(1.05);
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: ${({ $active }) => ($active ? '#fff' : '#111827')};
+  }
+`
+
 export const ChatTextarea = styled.textarea`
   flex: 1;
   padding: 12px 0;
@@ -279,6 +305,29 @@ export const StopButton = styled.button`
     width: 20px;
     height: 20px;
     fill: #fff;
+  }
+`
+
+export const MessageActionButton = styled.button`
+  margin-top: 10px;
+  background: rgba(0, 0, 0, 0.06);
+  border: none;
+  border-radius: 10px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.1);
+  }
+
+  svg {
+    width: 14px;
+    height: 14px;
+    fill: currentColor;
   }
 `
 
