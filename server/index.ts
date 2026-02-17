@@ -1,10 +1,12 @@
 import 'dotenv/config'
 import express from 'express'
+import { createServer } from 'http'
 import { createProxyMiddleware } from 'http-proxy-middleware'
 import './prisma'
 import { setupGraphqlServer } from './graphqlServer'
 import { initN8n, stopN8n } from './n8n'
 import { runBootstrap } from './n8n/bootstrap'
+import { setupSignalingServer } from './notebook/signaling'
 
 const withN8N = process.env.N8N_ENABLED === 'true'
 
@@ -53,7 +55,11 @@ async function startServer() {
     await runBootstrap()
   }
 
-  const server = express()
+  const app = express()
+  const httpServer = createServer(app)
+
+  // Attach notebook signaling WebSocket to the main HTTP server
+  setupSignalingServer(httpServer)
 
   // Proxy to n8n (webhook, webhook-test, mcp)
   const n8nUrl = process.env.N8N_URL || 'http://localhost:5678'
@@ -66,15 +72,15 @@ async function startServer() {
     },
   })
 
-  server.use('/webhook', n8nProxy)
-  server.use('/webhook-test', n8nProxy)
-  server.use('/mcp', n8nProxy)
+  app.use('/webhook', n8nProxy)
+  app.use('/webhook-test', n8nProxy)
+  app.use('/mcp', n8nProxy)
 
   // Static files from shared (uploads, not tracked)
-  server.use(express.static(cwd + '/shared'))
+  app.use(express.static(cwd + '/shared'))
 
   // Proxy /api to GraphQL server (HTTP + WebSocket)
-  server.use(
+  app.use(
     '/api',
     createProxyMiddleware({
       target: `http://localhost:${graphqlPort}/api`,
@@ -86,18 +92,18 @@ async function startServer() {
   if (!apiOnly) {
     // Otherwise, start full server with Next.js
     const next = (await import('next')).default
-    const app = next({ dev })
-    const handle = app.getRequestHandler()
+    const nextApp = next({ dev })
+    const handle = nextApp.getRequestHandler()
 
-    await app.prepare()
+    await nextApp.prepare()
 
     // Next.js handles everything else
-    server.get('*', (req, res) => {
+    app.get('*', (req, res) => {
       return handle(req, res)
     })
   }
 
-  server.listen(port, () => {
+  httpServer.listen(port, () => {
     // eslint-disable-next-line no-console
     console.log(`Ready on http://localhost:${port}, API at /api`)
   })

@@ -9,7 +9,7 @@ const nextConfig = {
       displayName: process.env.NODE_ENV === 'development',
     },
   },
-  allowedDevOrigins: ['site-boilerplate.narasim.dev.localhost'],
+  allowedDevOrigins: ['site-boilerplate.narasim.dev.localhost', '172.16.2.167', 'meniscoid-unbailable-ashlee.ngrok-free.dev'],
   async rewrites() {
     return [
       {
