@@ -1,6 +1,10 @@
+// ============================================
+// COMBINED SCHEMA FOR TESTING
+// ============================================
+
 generator client {
-  provider      = "prisma-client-js"
-  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
 }
 
 generator pothos {
@@ -11,6 +15,10 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// ============================================
+// Auth Domain
+// ============================================
 
 enum UserStatus {
   active
@@ -49,7 +57,16 @@ model User {
   isMentor       Boolean  @default(false)
   mentorSubjects String[]
 
-  Tokens Token[]
+  // Learning Engine relations
+  teacherId String? @db.VarChar(36)
+  Teacher   User?   @relation("StudentTeacher", fields: [teacherId], references: [id])
+  
+  strategyId String? @db.VarChar(36)
+  Strategy   StrategyConfig? @relation("UserStrategy", fields: [strategyId], references: [id])
+  
+  // Teacher relations
+  TeachingStrategies StrategyConfig[] @relation("TeacherStrategy")
+  Students User[] @relation("StudentTeacher")
 
   MindLogs      MindLog[]     @relation(name: "MindLogCreatedBy")
   TasksCreated  Task[]        @relation(name: "TaskCreatedBy")
@@ -80,72 +97,197 @@ model User {
   StudentRelations     MentorRelation[]      @relation(name: "StudentRelations")
   mediaEmbeds          MediaEmbed[]
 
+  // Skills Learning Engine
+  SkillProgresses SkillProgress[]
+  StudentChallenges StudentChallenge[]
+  EngineLogs EngineLog[]
+
   @@unique([email])
   @@unique([username])
 }
 
-model Token {
-  id        String    @id @default(cuid()) @db.VarChar(36)
-  createdAt DateTime  @default(now()) @db.Timestamp(3)
-  expiredAt DateTime? @db.Timestamp(3)
-  userId    String?   @db.VarChar(36)
-  User      User?     @relation(fields: [userId], references: [id])
+// ============================================
+// Skills Domain
+// ============================================
 
-  @@index(createdAt)
+enum SkillState {
+  NEW
+  LEARNING
+  STABLE
+  WEAKENING
+  MASTERED
 }
 
-enum MindLogType {
-  // Initial reaction to a stimulus – associations, emotions, spontaneous hypotheses and internal response.
-  Stimulus
+model Skill {
+  id               String   @id @default(cuid()) @db.VarChar(36)
+  createdAt        DateTime @default(now()) @db.Timestamp(3)
+  updatedAt        DateTime @default(now()) @updatedAt @db.Timestamp(3)
 
-  // Internal or analytical reaction to a stimulus, conscious first assessment.
-  Reaction
+  title            String  @db.VarChar(500)
+  description      String? @db.Text
+  masteryThreshold Int     @default(80)
+  decayRate        Int     @default(5)
 
-  // Chosen action or strategy in response to the reaction (specific step, decision).
-  Action
+  order            Int     @default(0)   // 👈 ВАЖНО
 
-  // Error log in case of request execution.
-  Error
+  challenges Challenge[]
+  progresses  SkillProgress[]
 
-  // Objective recording of the result of actions taken (what actually happened).
-  Result
-
-  // Main conclusion – integration of the experience gained, formulation of a lesson or rule for future cases.
-  Conclusion
-
-  // External assessment – feedback or review from the user/expert regarding the result and applied solution.
-  Evaluation
-
-  // Correction – record of changing/reinforcing the weight of knowledge or strategy based on external assessment.
-  Correction
-
-  // Record of knowledge or pattern: description, usefulness, history of application and corrections.
-  Knowledge
-
-  // Agent self-awareness: who I am, why I exist, my boundaries and limitations, communication style, purpose. Global log without user binding.
-  Identity
-
-  // Cache of recent activity (2-3 hours): who I communicated with, what I did, current situation. Sliding window for quick context understanding.
-  Context
-
-  // Information about relationship with a specific user: who they are, interaction history, expectations, communication style with them. Bound to relatedToUserId.
-  Relationship
-
-  ChallengeStarted
-  ChallengeProgress
-  ChallengeCompleted
-  HintRequested
-  SolutionError
-  Achievement
+  @@index([title])
+  @@index([order])
 }
+
+model Challenge {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  skillId   String
+  skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  difficulty Int      @default(1)
+  maxScore   Int      @default(10)
+  timeLimit  Int?     // seconds
+
+  createdById String @db.VarChar(36)
+  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade, name: "ChallengeCreatedBy")
+
+  steps      ChallengeStep[]
+  assignments StudentChallenge[]
+
+  @@index([skillId])
+  @@index([difficulty])
+}
+
+model ChallengeStep {
+  id          String   @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  order           Int
+  title           String  @db.VarChar(500)
+  description     String? @db.Text
+  expectedAnswer  String  @db.Text
+  hint            String? @db.Text
+  maxScore        Int     @default(1)
+
+  completions StepCompletion[]
+
+  @@unique([challengeId, order])
+  @@index([challengeId])
+}
+
+model SkillProgress {
+  id            String   @id @default(cuid()) @db.VarChar(36)
+  createdAt     DateTime @default(now()) @db.Timestamp(3)
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  userId        String
+  skillId       String
+
+  attempts      Int      @default(0)
+  correct       Int      @default(0)
+  confidence    Float    @default(0)
+  masteryLevel  Int      @default(0)
+
+  state         SkillState @default(NEW)
+
+  lastPracticed DateTime? @db.Timestamp(3)
+  nextReviewAt  DateTime? @db.Timestamp(3)
+
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+  @@index([userId])
+  @@index([skillId])
+  @@index([nextReviewAt])
+  @@index([state])
+}
+
+model StudentChallenge {
+  id          String   @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  userId      String
+  challengeId String
+  skillId     String
+
+  status      String   @default("assigned") // assigned, started, completed, failed
+  assignedAt  DateTime @default(now()) @db.Timestamp(3)
+  startedAt   DateTime? @db.Timestamp(3)
+  completedAt DateTime? @db.Timestamp(3)
+
+  score       Int      @default(0)
+  maxScore    Int
+  timeSpent   Int?     // seconds
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, challengeId])
+  @@index([userId])
+  @@index([challengeId])
+  @@index([status])
+}
+
+model StrategyConfig {
+  id String @id @default(cuid()) @db.VarChar(36)
+
+  name String @db.VarChar(200)
+  teacherId String? @db.VarChar(36) // null = global strategy
+
+  evaluationOrder Json   // ["review", "weak", "new"]
+
+  // State machine thresholds
+  stableThreshold   Float @default(80)
+  masteredThreshold Float @default(95)
+  weakeningThreshold Float @default(70)
+
+  reviewDelayDays Int  @default(3)
+
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @updatedAt @db.Timestamp(3)
+
+  // Relations
+  teacher User? @relation("TeacherStrategy", fields: [teacherId], references: [id])
+  usersUsingStrategy User[] @relation("UserStrategy")
+
+  @@index([teacherId])
+  @@unique([name, teacherId])
+}
+
+model EngineLog {
+  id String @id @default(cuid()) @db.VarChar(36)
+
+  userId String @db.VarChar(36)
+  action String @db.VarChar(100)
+  meta   Json?
+
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ============================================
+// Other domains (minimal for testing)
+// ============================================
 
 model MindLog {
-  id        String      @id @default(cuid()) @db.VarChar(36)
-  createdAt DateTime    @default(now()) @db.Timestamp(3)
-  updatedAt DateTime    @default(now()) @updatedAt @db.Timestamp(3)
-  type      MindLogType
-  data      String      @db.Text
-  quality   Float?
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  type      String
+  content   String   @db.Text
 
   createdById String @db.VarChar(36)
   CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade, name: "MindLogCreatedBy")
@@ -156,13 +298,6 @@ model MindLog {
   @@index([relatedToUserId])
 }
 
-enum TaskStatus {
-  New
-  Rejected
-  Progress
-  Done
-}
-
 model Task {
   id               String     @id @default(cuid()) @db.VarChar(36)
   createdAt        DateTime   @default(now()) @db.Timestamp(3)
@@ -170,7 +305,7 @@ model Task {
   title            String     @db.Text
   description      String?    @db.Text
   content          String?    @db.Text
-  status           TaskStatus @default(value: New)
+  status           String     @default("New")
   startDatePlaning DateTime?
   endDatePlaning   DateTime?
   startDate        DateTime?
@@ -201,455 +336,178 @@ model TaskWorkLog {
   CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade, name: "TaskWorkLogCreatedBy")
 }
 
-// ============================================
-// Knowledge Base
-// ============================================
-//
-// KB is not a storage of objective facts, but a belief graph of a specific subject (agent).
-// Every piece of knowledge is a hypothesis with confidence level, temporal validity, and relative importance.
-// Key principles:
-// - Fact ≠ truth — fact = statement + trust context
-// - Contradiction is a first-class object, not an error
-// - Re-evaluation = adding new fact, not modifying old ones
-// - One KB = one subject of cognition
-// ============================================
-
-// Concept: A semantic anchor representing an entity in the knowledge graph.
-// Can be a person, organization, event, abstract idea, etc.
-// Concepts are intentionally loose — they can be drafts, poorly defined initially.
-// The meaning emerges from Labels and Facts attached to them.
+// Placeholder models for other domains
 model KBConcept {
   id          String   @id @default(cuid()) @db.VarChar(36)
   createdAt   DateTime @default(now()) @db.Timestamp(3)
   updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(3)
-  // Semantic type of the concept (e.g., "organization", "person", "market_position", "event")
   type        String?  @db.VarChar(100)
-  // Primary name for quick scanning without joining Labels (denormalized for performance)
   name        String   @db.VarChar(500)
-  // Brief description of what this concept represents
-  description String?  @db.Text
+  description String? @db.Text
+  content     String?  @db.Text
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
-  content String? @db.Text
-
-  createdById String @db.VarChar(36)
-  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
-  Labels             KBLabel[]
-  FactParticipations KBFactParticipation[]
-  IdentityInputs     KBIdentityOperation[] @relation(name: "IdentityInput")
-  IdentityOutputs    KBIdentityOperation[] @relation(name: "IdentityOutput")
+  IdentityInputs  KBIdentityOperation[] @relation(name: "IdentityInput")
+  IdentityOutputs KBIdentityOperation[] @relation(name: "IdentityOutput")
 }
 
-// Label roles define how a name relates to its concept:
-// - primary: The main/official name in a given language
-// - synonym: Alternative name with the same meaning
-// - alias: Informal or alternative reference (e.g., nickname)
-// - abbreviation: Shortened form (e.g., "BMW" for "Bayerische Motoren Werke")
-enum KBLabelRole {
-  primary
-  synonym
-  alias
-  abbreviation
-}
-
-// Label: A name or designation for a Concept.
-// Supports multilingual naming — same concept can have labels in different languages.
-// Synonyms are different Labels of the same Concept; homonyms are different Concepts.
 model KBLabel {
   id        String      @id @default(cuid()) @db.VarChar(36)
   createdAt DateTime    @default(now()) @db.Timestamp(3)
   updatedAt DateTime    @default(now()) @updatedAt @db.Timestamp(3)
-  // The actual text of the label (e.g., "Toyota", "トヨタ自動車")
   text      String      @db.VarChar(500)
-  // ISO language code (e.g., "en", "ru", "ja")
   language  String?     @db.VarChar(10)
-  // How this label relates to the concept
-  role      KBLabelRole @default(primary)
-
+  role      String      @default("primary")
   conceptId String    @db.VarChar(36)
-  Concept   KBConcept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
-
-  createdById String @db.VarChar(36)
-  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
   @@index([conceptId])
 }
 
-// Fact verification status — epistemic state of the assertion:
-// - unverified: Just recorded, no validation yet
-// - tentative: Preliminary assessment, needs more evidence
-// - verified: Confirmed by reliable sources
-// - disputed: Conflicting evidence exists
-// - deprecated: No longer considered valid (but kept for history)
-enum KBFactStatus {
-  unverified
-  tentative
-  verified
-  disputed
-  deprecated
-}
-
-// Fact origin type:
-// - raw: Direct observation or input from external source
-// - derived: Computed/aggregated from other facts (e.g., yearly summary from monthly data)
-enum KBFactType {
-  raw
-  derived
-}
-
-// Fact: An n-ary statement that can involve multiple concepts through participation.
-// Facts don't belong to a single entity — entities PARTICIPATE in facts through roles.
-// Example: "In 2020, companies A, B, C were impacted by event X" is ONE fact with 4 participants.
-// Facts are temporal (valid_from/to), epistemic (confidence/status), and attention-weighted (importance).
-// Old facts are never deleted — they form the history of beliefs.
 model KBFact {
   id        String   @id @default(cuid()) @db.VarChar(36)
   createdAt DateTime @default(now()) @db.Timestamp(3)
   updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
-
-  createdById String @db.VarChar(36)
-  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
-  // === FACT CONTENT ===
-  // Type of fact (e.g., "market_position", "event_impact", "financial_metric")
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
   type      String @db.VarChar(200)
-  // Human-readable statement of the fact
   statement String @db.Text
-
-  // === TEMPORALITY ===
-  // When this fact was true in the real world (null = unknown/ongoing)
   validFrom  DateTime? @db.Date
   validTo    DateTime? @db.Date
-  // When we learned about this fact (epistemic timestamp)
   knownSince DateTime  @default(now()) @db.Timestamp(3)
-
-  // === EPISTEMOLOGY ===
-  // How much we trust this fact (0.0 to 1.0)
   confidence Float        @default(0.5)
-  // Verification status
-  status     KBFactStatus @default(unverified)
-  // Where this information came from (document, URL, observation)
-  source     String?      @db.Text
-
-  // === ATTENTION MANAGEMENT ===
-  // Global importance of this fact (0.0 to 1.0)
-  // Note: local importance per entity is in KBFactParticipation.localImportance
-  importance      Float @default(0.5)
-  // Why this importance level (e.g., ["used_in_reasoning", "constraint_violation"])
+  status     String        @default("unverified")
+  source     String?       @db.Text
+  importance Float         @default(0.5)
   importanceBasis Json?
-
-  // === PROVENANCE ===
-  // Whether this is raw input or computed from other facts
-  factType    KBFactType @default(raw)
-  // For derived facts: array of source fact IDs
+  factType   String        @default("raw")
   derivedFrom Json?
-
-  // Concepts participating in this fact (with their roles)
-  Participations KBFactParticipation[]
-  ConflictFacts  KBConflictFact[]
-  Projections    KBFactProjection[]
-
   @@index([type])
 }
 
-// FactParticipation: Links a Concept to a Fact with a specific role.
-// This enables n-ary facts where multiple entities participate with different roles.
-// Example roles: "subject", "object", "affected_party", "cause", "beneficiary", "location"
-model KBFactParticipation {
+model KBConstraint {
   id        String   @id @default(cuid()) @db.VarChar(36)
   createdAt DateTime @default(now()) @db.Timestamp(3)
-
-  conceptId String    @db.VarChar(36)
-  Concept   KBConcept @relation(fields: [conceptId], references: [id], onDelete: Cascade)
-
-  factId String @db.VarChar(36)
-  Fact   KBFact @relation(fields: [factId], references: [id], onDelete: Cascade)
-
-  // Role of this concept in the fact (e.g., "subject", "object", "affected_party", "cause")
-  role String @db.VarChar(100)
-
-  // Optional: impact qualifier (e.g., "positive", "negative", "neutral")
-  impact String? @db.VarChar(50)
-
-  // Optional: value associated with this participation (e.g., "12.3%" for market_share)
-  value String? @db.Text
-
-  // Local importance: how important this fact is for THIS specific concept (0.0 to 1.0)
-  // Different from fact.importance which is global
-  localImportance Float @default(0.5)
-
-  @@unique([conceptId, factId, role])
-  @@index([conceptId])
-  @@index([factId])
-  @@index([role])
-}
-
-// Constraint: An invariant rule that facts must satisfy.
-// Used for consistency checking — when facts violate a constraint, a Conflict is created.
-// Example: "sum(company.market_share) <= 100%" for a given market and period.
-model KBConstraint {
-  id         String   @id @default(cuid()) @db.VarChar(36)
-  createdAt  DateTime @default(now()) @db.Timestamp(3)
-  updatedAt  DateTime @default(now()) @updatedAt @db.Timestamp(3)
-  // The rule expression (can be natural language or formal)
-  constraint String   @db.Text
-  // Context where this constraint applies (e.g., {"market": "automotive", "region": "EU"})
-  scope      Json?
-
-  createdById String @db.VarChar(36)
-  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
-  // Conflicts triggered by this constraint
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  type      String @db.VarChar(100)
+  condition Json
+  severity  String @db.VarChar(50)
+  description String? @db.Text
   Conflicts KBConflict[]
+  @@index([type])
 }
 
-// Conflict resolution status:
-// - open: Contradiction detected, needs attention
-// - resolved: Resolved by adding new facts or adjusting confidence
-// - dismissed: Determined to be non-issue (false positive)
-enum KBConflictStatus {
-  open
-  resolved
-  dismissed
-}
-
-// Conflict: A detected contradiction between facts.
-// Contradictions are first-class objects — they are recorded, not hidden.
-// This allows the agent to reason about uncertainty and prioritize investigation.
 model KBConflict {
-  id        String           @id @default(cuid()) @db.VarChar(36)
-  createdAt DateTime         @default(now()) @db.Timestamp(3)
-  updatedAt DateTime         @default(now()) @updatedAt @db.Timestamp(3)
-  // Type of conflict (e.g., "constraint_violation", "temporal_overlap", "value_mismatch")
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
   type      String           @db.VarChar(100)
-  // Impact level (e.g., "high", "medium", "low")
   severity  String           @db.VarChar(50)
-  status    KBConflictStatus @default(open)
-
+  status    String           @default("open")
   createdById String @db.VarChar(36)
   CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
-  // Optional: which constraint was violated
   constraintId String?       @db.VarChar(36)
   Constraint   KBConstraint? @relation(fields: [constraintId], references: [id], onDelete: SetNull)
-
-  // The facts involved in this conflict
   Facts KBConflictFact[]
+  @@index([type])
 }
 
-// Junction table linking Conflicts to the Facts involved in them.
-// A conflict typically involves 2+ facts that contradict each other.
 model KBConflictFact {
   conflictId String     @db.VarChar(36)
   Conflict   KBConflict @relation(fields: [conflictId], references: [id], onDelete: Cascade)
-
   factId String @db.VarChar(36)
-  Fact   KBFact @relation(fields: [factId], references: [id], onDelete: Cascade)
-
   @@id([conflictId, factId])
 }
 
-// Identity operation types:
-// - merge: "These were thought to be different, but are actually the same entity"
-// - split: "This was thought to be one entity, but is actually multiple"
-enum KBIdentityOperationType {
-  merge
-  split
-}
-
-// IdentityOperation: Records when concepts are merged or split.
-// This is not a fact about the world — it's a cognitive operation by the agent.
-// Merge: multiple input concepts → one output concept (they were the same all along)
-// Split: one input concept → multiple output concepts (they were different all along)
-// Original concepts are preserved for historical integrity.
 model KBIdentityOperation {
-  id        String                  @id @default(cuid()) @db.VarChar(36)
-  createdAt DateTime                @default(now()) @db.Timestamp(3)
-  updatedAt DateTime                @default(now()) @updatedAt @db.Timestamp(3)
-  operation KBIdentityOperationType
-  // Why this operation was performed (e.g., "archival comparison", "new evidence")
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  operation String
   rationale String?                 @db.Text
-
-  createdById String @db.VarChar(36)
-  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
-  // For merge: the concepts being unified; for split: the concept being divided
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
   Inputs  KBConcept[] @relation(name: "IdentityInput")
-  // For merge: the unified concept; for split: the resulting separate concepts
   Outputs KBConcept[] @relation(name: "IdentityOutput")
 }
 
-// Proposal (Hypothesis) lifecycle:
-// - untested: Just formulated, not yet validated
-// - tested: Experiment/check performed
-// - confirmed: Hypothesis proved correct → can become a Fact
-// - rejected: Hypothesis proved incorrect
-enum KBProposalStatus {
-  untested
-  tested
-  confirmed
-  rejected
-}
-
-// Proposal (Hypothesis): A testable assumption before verification.
-// Hypotheses drive experimentation and can become Facts after confirmation.
-// Example: "In-memory cache will reduce latency by 30%"
 model KBProposal {
-  id        String           @id @default(cuid()) @db.VarChar(36)
-  createdAt DateTime         @default(now()) @db.Timestamp(3)
-  updatedAt DateTime         @default(now()) @updatedAt @db.Timestamp(3)
-  // The hypothesis statement
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
   statement String           @db.Text
-  status    KBProposalStatus @default(untested)
-  // Reference to what tested this hypothesis (could be a decision ID or external ref)
+  status    String           @default("untested")
   testedBy  String?          @db.VarChar(36)
-
-  createdById String @db.VarChar(36)
-  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
-  // Decisions that were based on this hypothesis
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
   Decisions KBDecision[] @relation(name: "DecisionProposal")
 }
 
-// Decision validity status:
-// - still_valid: Decision remains applicable in current context
-// - superseded: A newer decision has replaced this one
-// - context_invalid: The conditions that made this decision sensible no longer apply
-enum KBDecisionStatus {
-  superseded
-  context_invalid
-  still_valid
-}
-
-// Decision: A recorded choice made by the agent at a specific point in time.
-// Decisions are not facts — they are traces of reasoning under specific conditions.
-// Old decisions don't become "wrong" — they were locally optimal in their past context.
-// New decisions don't "fix" old ones — they dominate under new conditions.
 model KBDecision {
-  id        String           @id @default(cuid()) @db.VarChar(36)
-  createdAt DateTime         @default(now()) @db.Timestamp(3)
-  updatedAt DateTime         @default(now()) @updatedAt @db.Timestamp(3)
-  // What this decision is about (e.g., "Component X caching strategy")
-  subject   String           @db.VarChar(500)
-  // The actual decision made (e.g., "Use in-memory cache")
-  decision  String           @db.Text
-  // Conditions at decision time (constraints, knowledge state, etc.)
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
   context   Json?
-  // What happened after (result, issues, metrics)
-  outcome   Json?
-  status    KBDecisionStatus @default(still_valid)
-
-  // If this decision was superseded, points to the newer decision
-  revisedById String?      @db.VarChar(36)
-  RevisedBy   KBDecision?  @relation(fields: [revisedById], references: [id], onDelete: SetNull, name: "DecisionRevision")
-  // Decisions that superseded this one
-  Revisions   KBDecision[] @relation(name: "DecisionRevision")
-
-  // The hypothesis this decision was based on (if any)
-  basedOnProposalId String?     @db.VarChar(36)
-  BasedOnProposal   KBProposal? @relation(fields: [basedOnProposalId], references: [id], onDelete: SetNull, name: "DecisionProposal")
-
-  createdById String @db.VarChar(36)
-  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  reasoning String? @db.Text
+  outcome   String? @db.Text
+  confidence Float   @default(0.5)
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  ProposalId String?   @db.VarChar(36)
+  Proposal   KBProposal? @relation(fields: [ProposalId], references: [id], onDelete: SetNull, name: "DecisionProposal")
 }
 
-// Knowledge Space type:
-// - private: Personal knowledge space, visible only to owner
-// - shared: Shared among specific members
-// - public: Publicly available knowledge
-enum KBKnowledgeSpaceType {
-  private
-  shared
-  public
-}
-
-// KnowledgeSpace: A container for interpretation, trust, and access.
-// Facts exist globally but are "known" only through a Knowledge Space.
-// Reasoning always happens in the context of a specific space.
-// This enables:
-// - Privacy: fact is known to agent but not shared
-// - Contextuality: important in research, not important in summary
-// - Divergent opinions: two agents reference same fact with different trust/importance
 model KBKnowledgeSpace {
-  id          String               @id @default(cuid()) @db.VarChar(36)
-  createdAt   DateTime             @default(now()) @db.Timestamp(3)
-  updatedAt   DateTime             @default(now()) @updatedAt @db.Timestamp(3)
-  // Type of knowledge space
-  type        KBKnowledgeSpaceType @default(private)
-  // Human-readable name for this space
-  name        String               @db.VarChar(255)
-  // Description of what this space represents
-  description String?              @db.Text
-
-  createdById String @db.VarChar(36)
-  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
-  // Fact projections in this space
-  FactProjections KBFactProjection[]
+  id          String   @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  name        String   @db.VarChar(500)
+  description String?  @db.Text
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
 }
 
-// Visibility level for fact projections:
-// - visible: Fact is accessible in this space
-// - hidden: Fact exists but is intentionally hidden in this context
-enum KBFactProjectionVisibility {
-  visible
-  hidden
-}
-
-// FactProjection: A projection of a fact into a specific knowledge space.
-// One fact can have multiple projections in different spaces with different:
-// - visibility (visible/hidden)
-// - trustLevel (how much this space trusts the fact)
-// - importance (how important the fact is in this context)
-// This separates the fact itself from its interpretation in different contexts.
 model KBFactProjection {
   id        String   @id @default(cuid()) @db.VarChar(36)
   createdAt DateTime @default(now()) @db.Timestamp(3)
   updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
-
-  factId String @db.VarChar(36)
-  Fact   KBFact @relation(fields: [factId], references: [id], onDelete: Cascade)
-
-  knowledgeSpaceId String           @db.VarChar(36)
-  KnowledgeSpace   KBKnowledgeSpace @relation(fields: [knowledgeSpaceId], references: [id], onDelete: Cascade)
-
-  // Visibility in this space
-  visibility KBFactProjectionVisibility @default(visible)
-  // Trust level in this space (0.0 to 1.0)
-  trustLevel Float                      @default(0.5)
-  // Importance in this space (0.0 to 1.0)
-  importance Float                      @default(0.5)
-  // Optional notes specific to this projection
-  notes      String?                    @db.Text
-
-  createdById String @db.VarChar(36)
-  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
-
-  @@unique([factId, knowledgeSpaceId])
+  factId    String   @db.VarChar(36)
+  context   Json
+  weight    Float    @default(1.0)
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
   @@index([factId])
-  @@index([knowledgeSpaceId])
 }
 
-// ============================================
-// EX — Reflex + Reaction System
-// ============================================
-//
-// Like biological reflexes: stimulus → reflex (rule) → reaction (response) → result → evaluation
-// Two entities:
-// - EXReflex: rule "if X, then do Y with params Z" (conditional/unconditional)
-// - EXReaction: specific response to a stimulus
-// One reflex → many reactions
-// ============================================
+model KBFactParticipation {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  factId    String   @db.VarChar(36)
+  conceptId String   @db.VarChar(36)
+  role      String   @db.VarChar(100)
+  weight    Float    @default(1.0)
+  localImportance Float @default(0.5)
+  localImportanceBasis Json?
+  @@unique([factId, conceptId, role])
+  @@index([factId])
+  @@index([conceptId])
+}
 
+// EX domain enums
 enum EXReflexType {
-  unconditional // Built-in, mandatory
-  conditional // Learned, based on experience
+  INPUT
+  OUTPUT
+  INTERNAL
 }
 
 enum EXReflexStatus {
-  active // Active, in use
-  disabled // Disabled
-  draft // Draft, not yet applied
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
 }
 
 model EXReflex {
@@ -657,27 +515,12 @@ model EXReflex {
   createdAt DateTime @default(now()) @db.Timestamp(3)
   updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
 
-  type   EXReflexType   @default(conditional)
-  status EXReflexStatus @default(active)
-
-  // === STIMULUS ===
-  // What triggers this reflex: situation description
-  // e.g., "User requests file editing", "User asks to find information"
-  stimulus String @db.Text
-
-  // === RESPONSE ===
-  // What to do: action description
-  // e.g., "1. Read file\n2. Make changes\n3. Save"
-  response String @db.Text
-
-  // Which tools/functions to call with which params (JSON)
-  // e.g., { "tools": ["readFile", "editFile"], "params": { "backup": true } }
-  // execution Json?
-
-  // === AGGREGATED STATISTICS ===
-  // Updated after reactions
-  effectiveness Float? // 0.0 - 1.0, quality of this reflex
-  executionRate Float? // 0.0 - 1.0, how often this reflex is triggered
+  type      EXReflexType
+  status    EXReflexStatus @default(PENDING)
+  stimulus  Json
+  response  Json?
+  confidence Float @default(0.5)
+  metadata  Json?
 
   createdById String @db.VarChar(36)
   CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
@@ -686,6 +529,7 @@ model EXReflex {
 
   @@index([type])
   @@index([status])
+  @@index([createdById])
 }
 
 model EXReaction {
@@ -693,44 +537,21 @@ model EXReaction {
   createdAt DateTime @default(now()) @db.Timestamp(3)
   updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
 
-  // Which reflex was triggered
-  reflexId String   @db.VarChar(36)
-  Reflex   EXReflex @relation(fields: [reflexId], references: [id], onDelete: Cascade)
+  action    String
+  result    Json?
+  duration  Int?
 
-  // === STIMULUS ===
-  // What exactly triggered the reaction (specific message, event)
-  stimulus String @db.Text
-
-  // === RESULT ===
-  // Descriptive result from agent (what happened)
-  result String @db.Text
-
-  // === METRICS ===
-  tokensUsed Int?
-  durationMs Int?
-
-  // === SCORES ===
-  // Agent self-assessment (0.0 - 1.0)
-  scoreAgent  Float?
-  // Target user assessment — who received the action (0.0 - 1.0)
-  scoreTarget Float?
-  // Mentor/external assessment — who evaluates the agent (0.0 - 1.0)
-  scoreMentor Float?
-  // Feedback comment
-  feedback    String? @db.Text
-
-  // Who created this reaction (agent)
   createdById String @db.VarChar(36)
   CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
 
-  // Related user (who was interacted with)
-  relatedToUserId String? @db.VarChar(36)
+  reflexId String @db.VarChar(36)
+  Reflex   EXReflex @relation(fields: [reflexId], references: [id], onDelete: Cascade)
 
   @@index([reflexId])
   @@index([createdById])
-  @@index([relatedToUserId])
 }
 
+// Learning domain models
 enum Subject {
   Informatics
   Mathematics
@@ -770,54 +591,7 @@ enum ChallengeCompletionStatus {
   Abandoned
 }
 
-model Challenge {
-  id        String   @id @default(cuid()) @db.VarChar(36)
-  createdAt DateTime @default(now()) @db.Timestamp(3)
-  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
-
-  name         String  @db.VarChar(500)
-  description  String? @db.Text
-  instructions String? @db.Text
-
-  videoUrl      String? @db.Text
-  videoEmbedUrl String? @db.Text
-
-  subject       Subject
-  challengeType String  @db.VarChar(100)
-
-  difficulty    DifficultyLevel @default(Elementary)
-  estimatedTime Int?
-  maxScore      Int             @default(10)
-
-  content  Json?
-  seed     Json?
-  solution Json?
-  hints    Json?
-
-  tags        String[]
-  isPublished Boolean  @default(false)
-  isOfficial  Boolean  @default(false)
-  externalId  String?  @db.VarChar(100)
-
-  validationMode ValidationMode @default(Strict)
-  allowedMethods String[]
-  solutions      Json?
-
-  createdById String @db.VarChar(36)
-  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade, name: "ChallengeCreatedBy")
-
-  steps           ChallengeStep[]
-  Completions     ChallengeCompletion[]
-  TrackChallenges TrackChallenge[]
-
-  @@index([subject])
-  @@index([challengeType])
-  @@index([difficulty])
-  @@index([isPublished])
-  @@index([createdById])
-}
-
-model ChallengeStep {
+model ChallengeStepOld {
   id        String   @id @default(cuid()) @db.VarChar(36)
   createdAt DateTime @default(now()) @db.Timestamp(3)
   updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
@@ -836,8 +610,6 @@ model ChallengeStep {
   alternativeSteps Json?
 
   challengeId String    @db.VarChar(36)
-  Challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-
   StepCompletions StepCompletion[]
 
   @@unique([challengeId, order])
@@ -865,8 +637,6 @@ model ChallengeCompletion {
   selectedMethod String? @db.VarChar(100)
 
   challengeId String    @db.VarChar(36)
-  Challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
-
   userId String @db.VarChar(36)
   User   User   @relation(fields: [userId], references: [id], onDelete: Cascade, name: "ChallengeCompletionUser")
 
@@ -895,10 +665,14 @@ model StepCompletion {
   completionId String              @db.VarChar(36)
   Completion   ChallengeCompletion @relation(fields: [completionId], references: [id], onDelete: Cascade)
 
+  challengeStepOldId String?          @db.VarChar(36)
+  ChallengeStepOld    ChallengeStepOld? @relation(fields: [challengeStepOldId], references: [id], onDelete: SetNull)
+
   @@index([stepId])
   @@index([completionId])
 }
 
+// Tracks domain
 model Track {
   id        String   @id @default(cuid()) @db.VarChar(36)
   createdAt DateTime @default(now()) @db.Timestamp(3)
@@ -952,7 +726,6 @@ model TrackChallenge {
   Stage   TrackStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
 
   challengeId String    @db.VarChar(36)
-  Challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
 
   @@unique([stageId, challengeId])
   @@index([stageId])
@@ -980,6 +753,7 @@ model UserTrack {
   @@index([userId])
 }
 
+// Achievements domain
 enum AchievementType {
   FirstChallenge
   FirstPerfect
@@ -1018,6 +792,7 @@ model UserAchievement {
   @@index([userId])
 }
 
+// Mentoring domain
 enum MentorRelationStatus {
   Pending
   Active
@@ -1045,6 +820,7 @@ model MentorRelation {
   @@index([studentId])
 }
 
+// Statistics domain
 model UserStatistics {
   id        String   @id @default(cuid()) @db.VarChar(36)
   createdAt DateTime @default(now()) @db.Timestamp(3)
@@ -1068,6 +844,7 @@ model UserStatistics {
   @@index([date])
 }
 
+// Media domain
 enum MediaEmbedProvider {
   YouTube
   Rutube
@@ -1120,5 +897,4 @@ model MediaEmbedPlacement {
 
   @@index([embedId])
   @@index([targetType, targetId])
-  @@index([slot])
 }

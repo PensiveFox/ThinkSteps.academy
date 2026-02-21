@@ -1,0 +1,41 @@
+// ============================================
+// Achievements Domain
+// ============================================
+
+enum AchievementType {
+  FirstChallenge
+  FirstPerfect
+  Streak7
+  Streak30
+  Master10
+  SpeedRunner
+  NoHints
+  Helper
+}
+
+model Achievement {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  type        AchievementType
+  name        String          @db.VarChar(500)
+  description String?         @db.Text
+  icon        String?         @db.VarChar(100)
+
+  UserAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  achievementId String      @db.VarChar(36)
+  Achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  userId String @db.VarChar(36)
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserAchievementUser")
+
+  @@unique([achievementId, userId])
+  @@index([achievementId])
+  @@index([userId])
+}

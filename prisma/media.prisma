@@ -1,0 +1,57 @@
+// ============================================
+// Media Domain
+// ============================================
+
+enum MediaEmbedProvider {
+  YouTube
+  Rutube
+  VK
+  Vimeo
+  Custom
+}
+
+model MediaEmbed {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  provider MediaEmbedProvider @default(Custom)
+
+  title       String? @db.VarChar(500)
+  description String? @db.Text
+
+  url      String? @db.Text
+  embedUrl String  @db.Text
+
+  thumbnailUrl String? @db.Text
+  durationSec  Int?
+
+  createdById String? @db.VarChar(36)
+  CreatedBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  Placements MediaEmbedPlacement[]
+
+  @@index([provider])
+  @@index([createdById])
+}
+
+model MediaEmbedPlacement {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  embedId String     @db.VarChar(36)
+  Embed   MediaEmbed @relation(fields: [embedId], references: [id], onDelete: Cascade)
+
+  // Polymorphic reference: any entity/page by type + id
+  targetType String @db.VarChar(100)
+  targetId   String @db.VarChar(36)
+
+  // Optional placement metadata
+  slot     String? @db.VarChar(100)
+  position Int     @default(0)
+  props    Json?
+
+  @@index([embedId])
+  @@index([targetType, targetId])
+}

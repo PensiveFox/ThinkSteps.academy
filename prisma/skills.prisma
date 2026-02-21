@@ -1,0 +1,167 @@
+// ============================================
+// Skills Domain
+// ============================================
+
+model Skill {
+  id               String   @id @default(cuid()) @db.VarChar(36)
+  createdAt        DateTime @default(now()) @db.Timestamp(3)
+  updatedAt        DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  title            String  @db.VarChar(500)
+  description      String? @db.Text
+  masteryThreshold Int     @default(80)
+  decayRate        Int     @default(5)
+
+  order            Int     @default(0)   // 👈 ВАЖНО
+
+  challenges Challenge[]
+  progresses  SkillProgress[]
+
+  @@index([title])
+  @@index([order])
+}
+
+model Challenge {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  skillId   String
+  skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  difficulty Int      @default(1)
+  maxScore   Int      @default(10)
+  timeLimit  Int?     // seconds
+
+  steps      ChallengeStep[]
+  assignments StudentChallenge[]
+
+  @@index([skillId])
+  @@index([difficulty])
+}
+
+model ChallengeStep {
+  id          String   @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  order           Int
+  title           String  @db.VarChar(500)
+  description     String? @db.Text
+  expectedAnswer  String  @db.Text
+  hint            String? @db.Text
+  maxScore        Int     @default(1)
+
+  completions StepCompletion[]
+
+  @@unique([challengeId, order])
+  @@index([challengeId])
+}
+
+enum SkillState {
+  NEW
+  LEARNING
+  STABLE
+  WEAKENING
+  MASTERED
+}
+
+model SkillProgress {
+  id            String   @id @default(cuid()) @db.VarChar(36)
+  createdAt     DateTime @default(now()) @db.Timestamp(3)
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  userId        String
+  skillId       String
+
+  attempts      Int      @default(0)
+  correct       Int      @default(0)
+  confidence    Float    @default(0)
+  masteryLevel  Int      @default(0)
+
+  state         SkillState @default(NEW)
+
+  lastPracticed DateTime? @db.Timestamp(3)
+  nextReviewAt  DateTime? @db.Timestamp(3)
+
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user  User  @relation("SkillProgressUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+  @@index([userId])
+  @@index([skillId])
+  @@index([nextReviewAt])
+  @@index([state])
+}
+
+model StudentChallenge {
+  id          String   @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  userId      String
+  challengeId String
+  skillId     String
+
+  status      String   @default("assigned") // assigned, started, completed, failed
+  assignedAt  DateTime @default(now()) @db.Timestamp(3)
+  startedAt   DateTime? @db.Timestamp(3)
+  completedAt DateTime? @db.Timestamp(3)
+
+  score       Int      @default(0)
+  maxScore    Int
+  timeSpent   Int?     // seconds
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User      @relation("StudentChallengeUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, challengeId])
+  @@index([userId])
+  @@index([challengeId])
+  @@index([status])
+}
+
+model StrategyConfig {
+  id String @id @default(cuid()) @db.VarChar(36)
+
+  name String @db.VarChar(200)
+  teacherId String? @db.VarChar(36) // null = global strategy
+
+  evaluationOrder Json   // ["review", "weak", "new"]
+
+  // State machine thresholds
+  stableThreshold   Float @default(80)
+  masteredThreshold Float @default(95)
+  weakeningThreshold Float @default(70)
+
+  reviewDelayDays Int  @default(3)
+
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @updatedAt @db.Timestamp(3)
+
+  // Relations
+  teacher User? @relation("TeacherStrategy", fields: [teacherId], references: [id])
+  usersUsingStrategy User[] @relation("UserStrategy")
+
+  @@index([teacherId])
+  @@unique([name, teacherId])
+}
+
+model EngineLog {
+  id String @id @default(cuid()) @db.VarChar(36)
+
+  userId String @db.VarChar(36)
+  action String @db.VarChar(100)
+  meta   Json?
+
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  user User @relation("EngineLogUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}

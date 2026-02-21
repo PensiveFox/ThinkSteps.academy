@@ -1,0 +1,891 @@
+// ============================================
+// COMBINED SCHEMA FOR TESTING
+// ============================================
+
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+generator pothos {
+  provider = "prisma-pothos-types"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// Auth Domain
+// ============================================
+
+enum UserStatus {
+  active
+  blocked
+}
+
+model User {
+  id        String     @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime   @default(now()) @db.Timestamp(3)
+  updatedAt DateTime   @default(now()) @updatedAt @db.Timestamp(3)
+  status    UserStatus @default(active)
+  username  String?
+  password  String?    @db.VarChar(72)
+  email     String?
+  phone     String?
+  fullname  String?
+  image     String?    @db.Text
+  sudo      Boolean    @default(false)
+  data      Json?
+  intro     String?    @db.Text
+  content   String?    @db.Text
+
+  informaticsLevel  Int? @default(0)
+  informaticsRating Int? @default(0)
+  informaticsScore  Int? @default(0)
+
+  mathematicsLevel  Int? @default(0)
+  mathematicsRating Int? @default(0)
+  mathematicsScore  Int? @default(0)
+
+  totalChallenges Int       @default(0)
+  totalScore      Int       @default(0)
+  streak          Int       @default(0)
+  lastActivityAt  DateTime? @db.Timestamp(3)
+
+  isMentor       Boolean  @default(false)
+  mentorSubjects String[]
+
+  // Learning Engine relations
+  teacherId String? @db.VarChar(36)
+  Teacher   User?   @relation("StudentTeacher", fields: [teacherId], references: [id])
+  
+  strategyId String? @db.VarChar(36)
+  Strategy   StrategyConfig? @relation("UserStrategy", fields: [strategyId], references: [id])
+  
+  // Teacher relations
+  TeachingStrategies StrategyConfig[] @relation("TeacherStrategy")
+  Students User[] @relation("StudentTeacher")
+
+  MindLogs      MindLog[]     @relation(name: "MindLogCreatedBy")
+  TasksCreated  Task[]        @relation(name: "TaskCreatedBy")
+  TasksAssigned Task[]        @relation(name: "TaskAssignee")
+  TaskWorkLogs  TaskWorkLog[] @relation(name: "TaskWorkLogCreatedBy")
+
+  KBConcepts           KBConcept[]
+  KBLabels             KBLabel[]
+  KBFacts              KBFact[]
+  KBConstraints        KBConstraint[]
+  KBConflicts          KBConflict[]
+  KBIdentityOperations KBIdentityOperation[]
+  KBProposals          KBProposal[]
+  KBDecisions          KBDecision[]
+  KBKnowledgeSpaces    KBKnowledgeSpace[]
+  KBFactProjections    KBFactProjection[]
+
+  EXReflexes  EXReflex[]
+  EXReactions EXReaction[]
+
+  ChallengesCreated    Challenge[]           @relation(name: "ChallengeCreatedBy")
+  ChallengeCompletions ChallengeCompletion[] @relation(name: "ChallengeCompletionUser")
+  TracksCreated        Track[]               @relation(name: "TrackCreatedBy")
+  UserTracks           UserTrack[]           @relation(name: "UserTrackUser")
+  UserAchievements     UserAchievement[]     @relation(name: "UserAchievementUser")
+  Statistics           UserStatistics[]      @relation(name: "UserStatisticsUser")
+  MentorRelations      MentorRelation[]      @relation(name: "MentorRelations")
+  StudentRelations     MentorRelation[]      @relation(name: "StudentRelations")
+  mediaEmbeds          MediaEmbed[]
+
+  // Skills Learning Engine
+  SkillProgresses SkillProgress[]
+  StudentChallenges StudentChallenge[]
+  EngineLogs EngineLog[]
+
+  @@unique([email])
+  @@unique([username])
+}
+
+// ============================================
+// Skills Domain
+// ============================================
+
+enum SkillState {
+  NEW
+  LEARNING
+  STABLE
+  WEAKENING
+  MASTERED
+}
+
+model Skill {
+  id               String   @id @default(cuid()) @db.VarChar(36)
+  createdAt        DateTime @default(now()) @db.Timestamp(3)
+  updatedAt        DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  title            String  @db.VarChar(500)
+  description      String? @db.Text
+  masteryThreshold Int     @default(80)
+  decayRate        Int     @default(5)
+
+  order            Int     @default(0)   // 👈 ВАЖНО
+
+  challenges Challenge[]
+  progresses  SkillProgress[]
+
+  @@index([title])
+  @@index([order])
+}
+
+model Challenge {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  skillId   String
+  skill     Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+
+  difficulty Int      @default(1)
+  maxScore   Int      @default(10)
+  timeLimit  Int?     // seconds
+
+  steps      ChallengeStep[]
+  assignments StudentChallenge[]
+
+  @@index([skillId])
+  @@index([difficulty])
+}
+
+model ChallengeStep {
+  id          String   @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  challengeId String
+  challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  order           Int
+  title           String  @db.VarChar(500)
+  description     String? @db.Text
+  expectedAnswer  String  @db.Text
+  hint            String? @db.Text
+  maxScore        Int     @default(1)
+
+  completions StepCompletion[]
+
+  @@unique([challengeId, order])
+  @@index([challengeId])
+}
+
+model SkillProgress {
+  id            String   @id @default(cuid()) @db.VarChar(36)
+  createdAt     DateTime @default(now()) @db.Timestamp(3)
+  updatedAt     DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  userId        String
+  skillId       String
+
+  attempts      Int      @default(0)
+  correct       Int      @default(0)
+  confidence    Float    @default(0)
+  masteryLevel  Int      @default(0)
+
+  state         SkillState @default(NEW)
+
+  lastPracticed DateTime? @db.Timestamp(3)
+  nextReviewAt  DateTime? @db.Timestamp(3)
+
+  skill Skill @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, skillId])
+  @@index([userId])
+  @@index([skillId])
+  @@index([nextReviewAt])
+  @@index([state])
+}
+
+model StudentChallenge {
+  id          String   @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  userId      String
+  challengeId String
+  skillId     String
+
+  status      String   @default("assigned") // assigned, started, completed, failed
+  assignedAt  DateTime @default(now()) @db.Timestamp(3)
+  startedAt   DateTime? @db.Timestamp(3)
+  completedAt DateTime? @db.Timestamp(3)
+
+  score       Int      @default(0)
+  maxScore    Int
+  timeSpent   Int?     // seconds
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, challengeId])
+  @@index([userId])
+  @@index([challengeId])
+  @@index([status])
+}
+
+model StrategyConfig {
+  id String @id @default(cuid()) @db.VarChar(36)
+
+  name String @db.VarChar(200)
+  teacherId String? @db.VarChar(36) // null = global strategy
+
+  evaluationOrder Json   // ["review", "weak", "new"]
+
+  // State machine thresholds
+  stableThreshold   Float @default(80)
+  masteredThreshold Float @default(95)
+  weakeningThreshold Float @default(70)
+
+  reviewDelayDays Int  @default(3)
+
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @updatedAt @db.Timestamp(3)
+
+  // Relations
+  teacher User? @relation("TeacherStrategy", fields: [teacherId], references: [id])
+  usersUsingStrategy User[] @relation("UserStrategy")
+
+  @@index([teacherId])
+  @@unique([name, teacherId])
+}
+
+model EngineLog {
+  id String @id @default(cuid()) @db.VarChar(36)
+
+  userId String @db.VarChar(36)
+  action String @db.VarChar(100)
+  meta   Json?
+
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ============================================
+// Other domains (minimal for testing)
+// ============================================
+
+model MindLog {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  type      String
+  content   String   @db.Text
+
+  createdById String @db.VarChar(36)
+  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade, name: "MindLogCreatedBy")
+
+  relatedToUserId String? @db.VarChar(36)
+
+  @@index([type])
+  @@index([relatedToUserId])
+}
+
+model Task {
+  id               String     @id @default(cuid()) @db.VarChar(36)
+  createdAt        DateTime   @default(now()) @db.Timestamp(3)
+  updatedAt        DateTime   @default(now()) @updatedAt @db.Timestamp(3)
+  title            String     @db.Text
+  description      String?    @db.Text
+  content          String?    @db.Text
+  status           String     @default("New")
+  startDatePlaning DateTime?
+  endDatePlaning   DateTime?
+  startDate        DateTime?
+  endDate          DateTime?
+
+  createdById String @db.VarChar(36)
+  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade, name: "TaskCreatedBy")
+
+  assigneeId String? @db.VarChar(36)
+  Assignee   User?   @relation(fields: [assigneeId], references: [id], onDelete: Cascade, name: "TaskAssignee")
+
+  parentId String? @db.VarChar(36)
+  Parent   Task?   @relation(fields: [parentId], references: [id], onDelete: Cascade, name: "TaskChildren")
+  Children Task[]  @relation(name: "TaskChildren")
+
+  WorkLogs TaskWorkLog[]
+}
+
+model TaskWorkLog {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  content   String   @db.Text
+
+  taskId String @db.VarChar(36)
+  Task   Task   @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  createdById String @db.VarChar(36)
+  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade, name: "TaskWorkLogCreatedBy")
+}
+
+// Placeholder models for other domains
+model KBConcept {
+  id          String   @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  type        String?  @db.VarChar(100)
+  name        String   @db.VarChar(500)
+  description String? @db.Text
+  content     String?  @db.Text
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model KBLabel {
+  id        String      @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime    @default(now()) @db.Timestamp(3)
+  updatedAt DateTime    @default(now()) @updatedAt @db.Timestamp(3)
+  text      String      @db.VarChar(500)
+  language  String?     @db.VarChar(10)
+  role      String      @default("primary")
+  conceptId String    @db.VarChar(36)
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  @@index([conceptId])
+}
+
+model KBFact {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  type      String @db.VarChar(200)
+  statement String @db.Text
+  validFrom  DateTime? @db.Date
+  validTo    DateTime? @db.Date
+  knownSince DateTime  @default(now()) @db.Timestamp(3)
+  confidence Float        @default(0.5)
+  status     String        @default("unverified")
+  source     String?       @db.Text
+  importance Float         @default(0.5)
+  importanceBasis Json?
+  factType   String        @default("raw")
+  derivedFrom Json?
+  @@index([type])
+}
+
+model KBConstraint {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  type      String @db.VarChar(100)
+  condition Json
+  severity  String @db.VarChar(50)
+  description String? @db.Text
+  Conflicts KBConflict[]
+  @@index([type])
+}
+
+model KBConflict {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  type      String           @db.VarChar(100)
+  severity  String           @db.VarChar(50)
+  status    String           @default("open")
+  createdById String @db.VarChar(36)
+  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  constraintId String?       @db.VarChar(36)
+  Constraint   KBConstraint? @relation(fields: [constraintId], references: [id], onDelete: SetNull)
+  Facts KBConflictFact[]
+  @@index([type])
+}
+
+model KBConflictFact {
+  conflictId String     @db.VarChar(36)
+  Conflict   KBConflict @relation(fields: [conflictId], references: [id], onDelete: Cascade)
+  factId String @db.VarChar(36)
+  @@id([conflictId, factId])
+}
+
+model KBIdentityOperation {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  operation String
+  rationale String?                 @db.Text
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  Inputs  KBConcept[] @relation(name: "IdentityInput")
+  Outputs KBConcept[] @relation(name: "IdentityOutput")
+}
+
+model KBProposal {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  statement String           @db.Text
+  status    String           @default("untested")
+  testedBy  String?          @db.VarChar(36)
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  Decisions KBDecision[] @relation(name: "DecisionProposal")
+}
+
+model KBDecision {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  context   Json?
+  reasoning String? @db.Text
+  outcome   String? @db.Text
+  confidence Float   @default(0.5)
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  ProposalId String?   @db.VarChar(36)
+  Proposal   KBProposal? @relation(fields: [ProposalId], references: [id], onDelete: SetNull, name: "DecisionProposal")
+}
+
+model KBKnowledgeSpace {
+  id          String   @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  name        String   @db.VarChar(500)
+  description String?  @db.Text
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+}
+
+model KBFactProjection {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+  factId    String   @db.VarChar(36)
+  context   Json
+  weight    Float    @default(1.0)
+  createdById String   @db.VarChar(36)
+  CreatedBy   User     @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  @@index([factId])
+}
+
+model KBFactParticipation {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  factId    String   @db.VarChar(36)
+  conceptId String   @db.VarChar(36)
+  role      String   @db.VarChar(100)
+  weight    Float    @default(1.0)
+  localImportance Float @default(0.5)
+  localImportanceBasis Json?
+  @@unique([factId, conceptId, role])
+  @@index([factId])
+  @@index([conceptId])
+}
+
+// EX domain enums
+enum EXReflexType {
+  INPUT
+  OUTPUT
+  INTERNAL
+}
+
+enum EXReflexStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model EXReflex {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  type      EXReflexType
+  status    EXReflexStatus @default(PENDING)
+  stimulus  Json
+  response  Json?
+  confidence Float @default(0.5)
+  metadata  Json?
+
+  createdById String @db.VarChar(36)
+  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  Reactions EXReaction[]
+
+  @@index([type])
+  @@index([status])
+  @@index([createdById])
+}
+
+model EXReaction {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  action    String
+  result    Json?
+  duration  Int?
+
+  createdById String @db.VarChar(36)
+  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  reflexId String @db.VarChar(36)
+  Reflex   EXReflex @relation(fields: [reflexId], references: [id], onDelete: Cascade)
+
+  @@index([reflexId])
+  @@index([createdById])
+}
+
+// Learning domain models
+enum Subject {
+  Informatics
+  Mathematics
+  Physics
+  Chemistry
+}
+
+enum DifficultyLevel {
+  Beginner
+  Elementary
+  Intermediate
+  Advanced
+  Expert
+}
+
+enum ValidationMode {
+  Strict
+  Flexible
+  OpenEnded
+  AIValidation
+}
+
+enum ValidationType {
+  Exact
+  Numeric
+  TestCases
+  Pattern
+  AICheck
+  PeerReview
+}
+
+enum ChallengeCompletionStatus {
+  NotStarted
+  InProgress
+  Completed
+  Failed
+  Abandoned
+}
+
+model ChallengeStepOld {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  order       Int
+  title       String @db.VarChar(500)
+  description String @db.Text
+
+  validation Json
+  maxScore   Int   @default(1)
+  hints      Json?
+
+  solutionMethod   String?        @db.VarChar(100)
+  isOptional       Boolean        @default(false)
+  validationType   ValidationType @default(Exact)
+  alternativeSteps Json?
+
+  challengeId String    @db.VarChar(36)
+  StepCompletions StepCompletion[]
+
+  @@unique([challengeId, order])
+  @@index([challengeId])
+}
+
+model ChallengeCompletion {
+  id          String    @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime  @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamp(3)
+  startedAt   DateTime  @default(now()) @db.Timestamp(3)
+  completedAt DateTime? @db.Timestamp(3)
+
+  status ChallengeCompletionStatus @default(InProgress)
+
+  solution    Json?
+  attempts    Int   @default(0)
+  currentStep Int   @default(0)
+
+  score    Int @default(0)
+  maxScore Int
+
+  timeSpent      Int?
+  hintsUsed      Json?
+  selectedMethod String? @db.VarChar(100)
+
+  challengeId String    @db.VarChar(36)
+  userId String @db.VarChar(36)
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade, name: "ChallengeCompletionUser")
+
+  StepCompletions StepCompletion[]
+
+  @@unique([challengeId, userId])
+  @@index([challengeId])
+  @@index([userId])
+  @@index([status])
+}
+
+model StepCompletion {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  answer    Json
+  isCorrect Boolean @default(false)
+  score     Int     @default(0)
+  attempts  Int     @default(1)
+  feedback  String? @db.Text
+
+  stepId String        @db.VarChar(36)
+  Step   ChallengeStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  completionId String              @db.VarChar(36)
+  Completion   ChallengeCompletion @relation(fields: [completionId], references: [id], onDelete: Cascade)
+
+  @@index([stepId])
+  @@index([completionId])
+}
+
+// Tracks domain
+model Track {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  name        String  @db.VarChar(500)
+  description String? @db.Text
+  subject     Subject
+  order       Int
+
+  isPublished    Boolean @default(false)
+  estimatedHours Int?
+
+  createdById String @db.VarChar(36)
+  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade, name: "TrackCreatedBy")
+
+  Stages     TrackStage[]
+  UserTracks UserTrack[]
+
+  @@index([subject])
+  @@index([isPublished])
+  @@index([createdById])
+}
+
+model TrackStage {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  name        String  @db.VarChar(500)
+  description String? @db.Text
+  order       Int
+
+  trackId String @db.VarChar(36)
+  Track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  Challenges TrackChallenge[]
+
+  @@unique([trackId, order])
+  @@index([trackId])
+}
+
+model TrackChallenge {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  order      Int
+  isRequired Boolean @default(true)
+
+  stageId String     @db.VarChar(36)
+  Stage   TrackStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  challengeId String    @db.VarChar(36)
+
+  @@unique([stageId, challengeId])
+  @@index([stageId])
+  @@index([challengeId])
+}
+
+model UserTrack {
+  id          String    @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime  @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamp(3)
+  startedAt   DateTime  @default(now()) @db.Timestamp(3)
+  completedAt DateTime? @db.Timestamp(3)
+
+  currentStage Int   @default(0)
+  progress     Float @default(0)
+
+  trackId String @db.VarChar(36)
+  Track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  userId String @db.VarChar(36)
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserTrackUser")
+
+  @@unique([trackId, userId])
+  @@index([trackId])
+  @@index([userId])
+}
+
+// Achievements domain
+enum AchievementType {
+  FirstChallenge
+  FirstPerfect
+  Streak7
+  Streak30
+  Master10
+  SpeedRunner
+  NoHints
+  Helper
+}
+
+model Achievement {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  type        AchievementType
+  name        String          @db.VarChar(500)
+  description String?         @db.Text
+  icon        String?         @db.VarChar(100)
+
+  UserAchievements UserAchievement[]
+}
+
+model UserAchievement {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  achievementId String      @db.VarChar(36)
+  Achievement   Achievement @relation(fields: [achievementId], references: [id], onDelete: Cascade)
+
+  userId String @db.VarChar(36)
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserAchievementUser")
+
+  @@unique([achievementId, userId])
+  @@index([achievementId])
+  @@index([userId])
+}
+
+// Mentoring domain
+enum MentorRelationStatus {
+  Pending
+  Active
+  Paused
+  Completed
+}
+
+model MentorRelation {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  status  MentorRelationStatus @default(Pending)
+  subject Subject
+  notes   String?              @db.Text
+
+  mentorId String @db.VarChar(36)
+  Mentor   User   @relation(fields: [mentorId], references: [id], onDelete: Cascade, name: "MentorRelations")
+
+  studentId String @db.VarChar(36)
+  Student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade, name: "StudentRelations")
+
+  @@unique([mentorId, studentId, subject])
+  @@index([mentorId])
+  @@index([studentId])
+}
+
+// Statistics domain
+model UserStatistics {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  date    DateTime @db.Date
+  subject Subject
+
+  challengesStarted   Int   @default(0)
+  challengesCompleted Int   @default(0)
+  totalScore          Int   @default(0)
+  timeSpent           Int   @default(0)
+  hintsUsed           Int   @default(0)
+  averageAttempts     Float @default(0)
+
+  userId String @db.VarChar(36)
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserStatisticsUser")
+
+  @@unique([userId, date, subject])
+  @@index([userId])
+  @@index([date])
+}
+
+// Media domain
+enum MediaEmbedProvider {
+  YouTube
+  Rutube
+  VK
+  Vimeo
+  Custom
+}
+
+model MediaEmbed {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  provider MediaEmbedProvider @default(Custom)
+
+  title       String? @db.VarChar(500)
+  description String? @db.Text
+
+  url      String? @db.Text
+  embedUrl String  @db.Text
+
+  thumbnailUrl String? @db.Text
+  durationSec  Int?
+
+  createdById String? @db.VarChar(36)
+  CreatedBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  Placements MediaEmbedPlacement[]
+
+  @@index([provider])
+  @@index([createdById])
+}
+
+model MediaEmbedPlacement {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  embedId String     @db.VarChar(36)
+  Embed   MediaEmbed @relation(fields: [embedId], references: [id], onDelete: Cascade)
+
+  // Polymorphic reference: any entity/page by type + id
+  targetType String @db.VarChar(100)
+  targetId   String @db.VarChar(36)
+
+  // Optional placement metadata
+  slot     String? @db.VarChar(100)
+  position Int     @default(0)
+  props    Json?
+
+  @@index([embedId])
+  @@index([targetType, targetId])
+}

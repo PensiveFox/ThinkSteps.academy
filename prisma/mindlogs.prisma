@@ -1,0 +1,61 @@
+enum MindLogType {
+  // Initial reaction to a stimulus – associations, emotions, spontaneous hypotheses and internal response.
+  Stimulus
+
+  // Internal or analytical reaction to a stimulus, conscious first assessment.
+  Reaction
+
+  // Chosen action or strategy in response to the reaction (specific step, decision).
+  Action
+
+  // Error log in case of request execution.
+  Error
+
+  // Objective recording of the result of actions taken (what actually happened).
+  Result
+
+  // Main conclusion – integration of the experience gained, formulation of a lesson or rule for future cases.
+  Conclusion
+
+  // External assessment – feedback or review from the user/expert regarding the result and applied solution.
+  Evaluation
+
+  // Correction – record of changing/reinforcing the weight of knowledge or strategy based on external assessment.
+  Correction
+
+  // Record of knowledge or pattern: description, usefulness, history of application and corrections.
+  Knowledge
+
+  // Agent self-awareness: who I am, why I exist, my boundaries and limitations, communication style, purpose. Global log without user binding.
+  Identity
+
+  // Cache of recent activity (2-3 hours): who I communicated with, what I did, current situation. Sliding window for quick context understanding.
+  Context
+
+  // Information about relationship with a specific user: who they are, interaction history, expectations, communication style with them. Bound to relatedToUserId.
+  Relationship
+
+  ChallengeStarted
+  ChallengeProgress
+  ChallengeCompleted
+  HintRequested
+  SolutionError
+  Achievement
+}
+
+model MindLog {
+  id        String      @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime    @default(now()) @db.Timestamp(3)
+  updatedAt DateTime    @default(now()) @updatedAt @db.Timestamp(3)
+  type      MindLogType
+  data      String      @db.Text
+  quality   Float?
+
+  createdById String @db.VarChar(36)
+  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade, name: "MindLogCreatedBy")
+
+  relatedToUserId String? @db.VarChar(36)
+
+  @@index([type])
+  @@index([relatedToUserId])
+}

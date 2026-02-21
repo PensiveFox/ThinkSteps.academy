@@ -1,0 +1,30 @@
+// ============================================
+// Mentoring Domain
+// ============================================
+
+enum MentorRelationStatus {
+  Pending
+  Active
+  Paused
+  Completed
+}
+
+model MentorRelation {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  status  MentorRelationStatus @default(Pending)
+  subject Subject
+  notes   String?              @db.Text
+
+  mentorId String @db.VarChar(36)
+  Mentor   User   @relation(fields: [mentorId], references: [id], onDelete: Cascade, name: "MentorRelations")
+
+  studentId String @db.VarChar(36)
+  Student   User   @relation(fields: [studentId], references: [id], onDelete: Cascade, name: "StudentRelations")
+
+  @@unique([mentorId, studentId, subject])
+  @@index([mentorId])
+  @@index([studentId])
+}

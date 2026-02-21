@@ -1,0 +1,84 @@
+// ============================================
+// Tracks Domain
+// ============================================
+
+model Track {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  name        String  @db.VarChar(500)
+  description String? @db.Text
+  subject     Subject
+  order       Int
+
+  isPublished    Boolean @default(false)
+  estimatedHours Int?
+
+  createdById String @db.VarChar(36)
+  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade, name: "TrackCreatedBy")
+
+  Stages     TrackStage[]
+  UserTracks UserTrack[]
+
+  @@index([subject])
+  @@index([isPublished])
+  @@index([createdById])
+}
+
+model TrackStage {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  name        String  @db.VarChar(500)
+  description String? @db.Text
+  order       Int
+
+  trackId String @db.VarChar(36)
+  Track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  Challenges TrackChallenge[]
+
+  @@unique([trackId, order])
+  @@index([trackId])
+}
+
+model TrackChallenge {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  order      Int
+  isRequired Boolean @default(true)
+
+  stageId String     @db.VarChar(36)
+  Stage   TrackStage @relation(fields: [stageId], references: [id], onDelete: Cascade)
+
+  challengeId String    @db.VarChar(36)
+  Challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([stageId, challengeId])
+  @@index([stageId])
+  @@index([challengeId])
+}
+
+model UserTrack {
+  id          String    @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime  @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamp(3)
+  startedAt   DateTime  @default(now()) @db.Timestamp(3)
+  completedAt DateTime? @db.Timestamp(3)
+
+  currentStage Int   @default(0)
+  progress     Float @default(0)
+
+  trackId String @db.VarChar(36)
+  Track   Track  @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  userId String @db.VarChar(36)
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserTrackUser")
+
+  @@unique([trackId, userId])
+  @@index([trackId])
+  @@index([userId])
+}

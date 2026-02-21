@@ -1,0 +1,26 @@
+// ============================================
+// Statistics Domain
+// ============================================
+
+model UserStatistics {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  date    DateTime @db.Date
+  subject Subject
+
+  challengesStarted   Int   @default(0)
+  challengesCompleted Int   @default(0)
+  totalScore          Int   @default(0)
+  timeSpent           Int   @default(0)
+  hintsUsed           Int   @default(0)
+  averageAttempts     Float @default(0)
+
+  userId String @db.VarChar(36)
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade, name: "UserStatisticsUser")
+
+  @@unique([userId, date, subject])
+  @@index([userId])
+  @@index([date])
+}

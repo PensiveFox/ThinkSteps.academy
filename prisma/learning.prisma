@@ -1,0 +1,171 @@
+// ============================================
+// Learning Domain
+// ============================================
+
+enum Subject {
+  Informatics
+  Mathematics
+  Physics
+  Chemistry
+}
+
+enum DifficultyLevel {
+  Beginner
+  Elementary
+  Intermediate
+  Advanced
+  Expert
+}
+
+enum ValidationMode {
+  Strict
+  Flexible
+  OpenEnded
+  AIValidation
+}
+
+enum ValidationType {
+  Exact
+  Numeric
+  TestCases
+  Pattern
+  AICheck
+  PeerReview
+}
+
+enum ChallengeCompletionStatus {
+  NotStarted
+  InProgress
+  Completed
+  Failed
+  Abandoned
+}
+
+model Challenge {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  name         String  @db.VarChar(500)
+  description  String? @db.Text
+  instructions String? @db.Text
+
+  videoUrl      String? @db.Text
+  videoEmbedUrl String? @db.Text
+
+  subject       Subject
+  challengeType String  @db.VarChar(100)
+
+  difficulty    DifficultyLevel @default(Elementary)
+  estimatedTime Int?
+  maxScore      Int             @default(10)
+
+  content  Json?
+  seed     Json?
+  solution Json?
+  hints    Json?
+
+  tags        String[]
+  isPublished Boolean  @default(false)
+  isOfficial  Boolean  @default(false)
+  externalId  String?  @db.VarChar(100)
+
+  validationMode ValidationMode @default(Strict)
+  allowedMethods String[]
+  solutions      Json?
+
+  createdById String @db.VarChar(36)
+  CreatedBy   User   @relation(fields: [createdById], references: [id], onDelete: Cascade, name: "ChallengeCreatedBy")
+
+  steps           ChallengeStep[]
+  Completions     ChallengeCompletion[]
+  TrackChallenges TrackChallenge[]
+
+  @@index([subject])
+  @@index([challengeType])
+  @@index([difficulty])
+  @@index([isPublished])
+  @@index([createdById])
+}
+
+model ChallengeStep {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  order       Int
+  title       String @db.VarChar(500)
+  description String @db.Text
+
+  validation Json
+  maxScore   Int   @default(1)
+  hints      Json?
+
+  solutionMethod   String?        @db.VarChar(100)
+  isOptional       Boolean        @default(false)
+  validationType   ValidationType @default(Exact)
+  alternativeSteps Json?
+
+  challengeId String    @db.VarChar(36)
+  Challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  StepCompletions StepCompletion[]
+
+  @@unique([challengeId, order])
+  @@index([challengeId])
+}
+
+model ChallengeCompletion {
+  id          String    @id @default(cuid()) @db.VarChar(36)
+  createdAt   DateTime  @default(now()) @db.Timestamp(3)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamp(3)
+  startedAt   DateTime  @default(now()) @db.Timestamp(3)
+  completedAt DateTime? @db.Timestamp(3)
+
+  status ChallengeCompletionStatus @default(InProgress)
+
+  solution    Json?
+  attempts    Int   @default(0)
+  currentStep Int   @default(0)
+
+  score    Int @default(0)
+  maxScore Int
+
+  timeSpent      Int?
+  hintsUsed      Json?
+  selectedMethod String? @db.VarChar(100)
+
+  challengeId String    @db.VarChar(36)
+  Challenge   Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  userId String @db.VarChar(36)
+  User   User   @relation(fields: [userId], references: [id], onDelete: Cascade, name: "ChallengeCompletionUser")
+
+  StepCompletions StepCompletion[]
+
+  @@unique([challengeId, userId])
+  @@index([challengeId])
+  @@index([userId])
+  @@index([status])
+}
+
+model StepCompletion {
+  id        String   @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+  updatedAt DateTime @default(now()) @updatedAt @db.Timestamp(3)
+
+  answer    Json
+  isCorrect Boolean @default(false)
+  score     Int     @default(0)
+  attempts  Int     @default(1)
+  feedback  String? @db.Text
+
+  stepId String        @db.VarChar(36)
+  Step   ChallengeStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  completionId String              @db.VarChar(36)
+  Completion   ChallengeCompletion @relation(fields: [completionId], references: [id], onDelete: Cascade)
+
+  @@index([stepId])
+  @@index([completionId])
+}

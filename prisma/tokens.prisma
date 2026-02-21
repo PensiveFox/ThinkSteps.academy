@@ -1,0 +1,16 @@
+enum TokenType {
+  REFRESH
+  VERIFY_EMAIL
+  RESET_PASSWORD
+}
+
+model Token {
+  id        String    @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime  @default(now()) @db.Timestamp(3)
+  type      TokenType
+  expiredAt DateTime? @db.Timestamp(3)
+  userId    String?   @db.VarChar(36)
+  User      User?     @relation(fields: [userId], references: [id])
+
+  @@index(createdAt)
+}

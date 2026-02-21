@@ -1,0 +1,90 @@
+enum UserStatus {
+  active
+  blocked
+}
+
+model User {
+  id        String     @id @default(cuid()) @db.VarChar(36)
+  createdAt DateTime   @default(now()) @db.Timestamp(3)
+  updatedAt DateTime   @default(now()) @updatedAt @db.Timestamp(3)
+  status    UserStatus @default(active)
+  username  String?
+  password  String?    @db.VarChar(72)
+  email     String?
+  phone     String?
+  fullname  String?
+  image     String?    @db.Text
+  sudo      Boolean    @default(false)
+  data      Json?
+  intro     String?    @db.Text
+  content   String?    @db.Text
+
+  informaticsLevel  Int? @default(0)
+  informaticsRating Int? @default(0)
+  informaticsScore  Int? @default(0)
+
+  mathematicsLevel  Int? @default(0)
+  mathematicsRating Int? @default(0)
+  mathematicsScore  Int? @default(0)
+
+  totalChallenges Int       @default(0)
+  totalScore      Int       @default(0)
+  streak          Int       @default(0)
+  lastActivityAt  DateTime? @db.Timestamp(3)
+
+  isMentor       Boolean  @default(false)
+  mentorSubjects String[]
+
+  // Learning Engine relations
+  teacherId String? @db.VarChar(36)
+  Teacher   User?   @relation("StudentTeacher", fields: [teacherId], references: [id])
+  
+  strategyId String? @db.VarChar(36)
+  Strategy   StrategyConfig? @relation("UserStrategy", fields: [strategyId], references: [id])
+  
+  // Teacher relations
+  TeachingStrategies StrategyConfig[] @relation("TeacherStrategy")
+  Students User[] @relation("StudentTeacher")
+
+  // Skills Learning Engine relations
+  SkillProgresses SkillProgress[] @relation("SkillProgressUser")
+  StudentChallenges StudentChallenge[] @relation("StudentChallengeUser")
+  EngineLogs EngineLog[] @relation("EngineLogUser")
+
+  MindLogs      MindLog[]     @relation(name: "MindLogCreatedBy")
+  TasksCreated  Task[]        @relation(name: "TaskCreatedBy")
+  TasksAssigned Task[]        @relation(name: "TaskAssignee")
+  TaskWorkLogs  TaskWorkLog[] @relation(name: "TaskWorkLogCreatedBy")
+
+  KBConcepts           KBConcept[]
+  KBLabels             KBLabel[]
+  KBFacts              KBFact[]
+  KBConstraints        KBConstraint[]
+  KBConflicts          KBConflict[]
+  KBIdentityOperations KBIdentityOperation[]
+  KBProposals          KBProposal[]
+  KBDecisions          KBDecision[]
+  KBKnowledgeSpaces    KBKnowledgeSpace[]
+  KBFactProjections    KBFactProjection[]
+
+  EXReflexes  EXReflex[]
+  EXReactions EXReaction[]
+
+  ChallengesCreated    Challenge[]           @relation(name: "ChallengeCreatedBy")
+  ChallengeCompletions ChallengeCompletion[] @relation(name: "ChallengeCompletionUser")
+  TracksCreated        Track[]               @relation(name: "TrackCreatedBy")
+  UserTracks           UserTrack[]           @relation(name: "UserTrackUser")
+  UserAchievements     UserAchievement[]     @relation(name: "UserAchievementUser")
+  Statistics           UserStatistics[]      @relation(name: "UserStatisticsUser")
+  MentorRelations      MentorRelation[]      @relation(name: "MentorRelations")
+  StudentRelations     MentorRelation[]      @relation(name: "StudentRelations")
+  mediaEmbeds          MediaEmbed[]
+
+  // Skills Learning Engine relations
+  SkillProgresses      SkillProgress[]       @relation("SkillProgressUser")
+  StudentChallenges    StudentChallenge[]    @relation("StudentChallengeUser")
+  EngineLogs           EngineLog[]           @relation("EngineLogUser")
+
+  @@unique([email])
+  @@unique([username])
+}
