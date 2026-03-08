@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📊 ОГЭ по информатике 2025 - Вертикальная таблица</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .vertical-table {
+            display: flex;
+            min-height: 600px;
+        }
+
+        .task-numbers {
+            width: 80px;
+            background: #f8f9fa;
+            border-right: 2px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .task-number {
+            padding: 20px 10px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 1.1em;
+            border-bottom: 1px solid #dee2e6;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            transition: all 0.3s ease;
+        }
+
+        .task-number:hover {
+            background: #4facfe;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .task-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .task-row {
+            display: flex;
+            border-bottom: 1px solid #e9ecef;
+            min-height: 60px;
+        }
+
+        .subtypes {
+            flex: 2;
+            padding: 20px;
+            border-right: 1px solid #e9ecef;
+            background: #fff;
+        }
+
+        .subtype-item {
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9em;
+            border-left: 4px solid #4facfe;
+        }
+
+        .examples {
+            flex: 3;
+            padding: 20px;
+            border-right: 1px solid #e9ecef;
+            background: #fafbfc;
+        }
+
+        .example-item {
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            background: white;
+            border-radius: 8px;
+            font-size: 0.85em;
+            border: 1px solid #e9ecef;
+            font-family: 'Courier New', monospace;
+        }
+
+        .progress {
+            flex: 1;
+            padding: 20px;
+            background: #f8f9fa;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .progress-bar {
+            background: #e9ecef;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.8em;
+        }
+
+        .grade {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #4facfe;
+            margin-top: 5px;
+        }
+
+        .grade-3 { color: #ffc107; }
+        .grade-4 { color: #28a745; }
+        .grade-5 { color: #007bff; }
+
+        .task-types {
+            margin-top: 30px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .task-types h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .type-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .type-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .type-card h3 {
+            color: #4facfe;
+            margin-bottom: 15px;
+        }
+
+        .type-item {
+            margin-bottom: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            font-size: 0.9em;
+        }
+
+        .task-number-completed {
+            background: #28a745;
+            color: white;
+        }
+
+        .task-number-partial {
+            background: #ffc107;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .vertical-table {
+                flex-direction: column;
+            }
+            
+            .task-numbers {
+                width: 100%;
+                flex-direction: row;
+                overflow-x: auto;
+            }
+            
+            .task-number {
+                min-width: 60px;
+            }
+            
+            .task-content {
+                width: 100%;
+            }
+            
+            .task-row {
+                flex-direction: column;
+            }
+            
+            .subtypes, .examples, .progress {
+                border-right: none;
+                border-bottom: 1px solid #e9ecef;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 ОГЭ по информатике 2025</h1>
+            <p>Вертикальная таблица заданий с подтипами и прогрессом</p>
+        </div>
+
+        <div class="vertical-table">
+            <div class="task-numbers">
+                <div class="task-number">1</div>
+                <div class="task-number">2</div>
+                <div class="task-number">3</div>
+                <div class="task-number">4</div>
+                <div class="task-number">5</div>
+                <div class="task-number">6</div>
+                <div class="task-number">7</div>
+                <div class="task-number">8</div>
+                <div class="task-number">9</div>
+                <div class="task-number">10</div>
+                <div class="task-number">11</div>
+                <div class="task-number">12</div>
+                <div class="task-number">13</div>
+                <div class="task-number">14</div>
+                <div class="task-number">15</div>
+                <div class="task-number">16</div>
+            </div>
+
+            <div class="task-content">
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Объём памяти</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">Текст: 256 символов, 1 символ = 1 байт</div>
+                        <div class="example-item">Изображение: 800×600 пикселей, 24 бита/пиксель</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 6.25%">6.25%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Кодирование</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">ASCII: A=65, B=66</div>
+                        <div class="example-item">Unicode: кириллица 2 байта/символ</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 12.5%">12.5%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Логика</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">A и B, A или B, не A</div>
+                        <div class="example-item">Таблицы истинности</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 18.75%">18.75%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Модели</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">Графы, деревья, таблицы</div>
+                        <div class="example-item">Блок-схемы алгоритмов</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 25%">25%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Исполнители</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">Черепашка, Робот, Кузнечик</div>
+                        <div class="example-item">Команды: вперед, поворот, прыжок</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 31.25%">31.25%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Программирование</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">Python: for, while, if</div>
+                        <div class="example-item">Переменные, массивы, функции</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 37.5%">37.5%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Сети</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">IP-адрес: 192.168.1.1</div>
+                        <div class="example-item">Протоколы: HTTP, FTP, DNS</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 43.75%">43.75%</div>
+                        </div>
+                        <div class="grade grade-3">3</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Поиск в сети</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">Поисковые запросы</div>
+                        <div class="example-item">Логические операторы: AND, OR</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 50%">50%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Схемы</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">Чтение блок-схем</div>
+                        <div class="example-item">Таблицы и диаграммы</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 56.25%">56.25%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Системы счисления</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">Двоичная: 1010 = 10</div>
+                        <div class="example-item">Восьмеричная, шестнадцатеричная</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 62.5%">62.5%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Файловая система</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">Папки, файлы, пути</div>
+                        <div class="example-item">Поиск: *.txt, размер > 1КБ</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 68.75%">68.75%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Размеры файлов</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">Байт, КБ, МБ, ГБ</div>
+                        <div class="example-item">Сумма размеров файлов</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 75%">75%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Презентация</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">PowerPoint: слайды, анимация</div>
+                        <div class="example-item">Требования: 5 слайдов, тема</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 81.25%">81.25%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Таблицы</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">Excel: формулы, диаграммы</div>
+                        <div class="example-item">СУММ, СРЗНАЧ, МАКС</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 87.5%">87.5%</div>
+                        </div>
+                        <div class="grade">-</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Программа исполнителя</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">Алгоритм для Робота/Черепашки</div>
+                        <div class="example-item">Циклы, условия, процедуры</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 93.75%">93.75%</div>
+                        </div>
+                        <div class="grade grade-4">4</div>
+                    </div>
+                </div>
+
+                <div class="task-row">
+                    <div class="subtypes">
+                        <div class="subtype-item">Универсальная программа</div>
+                    </div>
+                    <div class="examples">
+                        <div class="example-item">Python/C++: массивы, сортировка</div>
+                        <div class="example-item">Обработка данных, файлы</div>
+                    </div>
+                    <div class="progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 100%">100%</div>
+                        </div>
+                        <div class="grade grade-5">5</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="task-types">
+            <h2>📋 Типы заданий и подтипы</h2>
+            <div class="type-grid">
+                <div class="type-card">
+                    <h3>Цифровая грамотность</h3>
+                    <div class="type-item">Задание 7: Адресация в сети</div>
+                    <div class="type-item">Задание 8: Поиск информации</div>
+                    <div class="type-item">Задание 11: Работа с файлами</div>
+                    <div class="type-item">Задание 12: Размеры файлов</div>
+                </div>
+
+                <div class="type-card">
+                    <h3>Теоретические основы</h3>
+                    <div class="type-item">Задание 1: Объём памяти</div>
+                    <div class="type-item">Задание 2: Кодирование</div>
+                    <div class="type-item">Задание 3: Логические выражения</div>
+                    <div class="type-item">Задание 4: Модели объектов</div>
+                    <div class="type-item">Задание 9: Анализ схем</div>
+                    <div class="type-item">Задание 10: Системы счисления</div>
+                </div>
+
+                <div class="type-card">
+                    <h3>Алгоритмы и программирование</h3>
+                    <div class="type-item">Задание 5: Исполнители</div>
+                    <div class="type-item">Задание 6: Чтение программ</div>
+                    <div class="type-item">Задание 15: Программа исполнителя</div>
+                    <div class="type-item">Задание 16: Универсальная программа</div>
+                </div>
+
+                <div class="type-card">
+                    <h3>Информационные технологии</h3>
+                    <div class="type-item">Задание 13: Презентация/Текст</div>
+                    <div class="type-item">Задание 14: Электронные таблицы</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Интерактивность для прогресса
+        document.addEventListener('DOMContentLoaded', function() {
+            const taskNumbers = document.querySelectorAll('.task-number');
+            const progressBars = document.querySelectorAll('.progress-fill');
+            const grades = document.querySelectorAll('.grade');
+            
+            // Симуляция прогресса при клике на номер задания
+            taskNumbers.forEach((task, index) => {
+                task.addEventListener('click', function() {
+                    // Обновление прогресс-бара
+                    const percentage = ((index + 1) / 16 * 100).toFixed(2);
+                    progressBars.forEach(bar => {
+                        bar.style.width = percentage + '%';
+                        bar.textContent = percentage + '%';
+                    });
+                    
+                    // Обновление оценки
+                    grades.forEach(grade => {
+                        grade.classList.remove('grade-3', 'grade-4', 'grade-5');
+                        
+                        if (index < 6) {
+                            grade.textContent = '-';
+                        } else if (index < 10) {
+                            grade.textContent = '3';
+                            grade.classList.add('grade-3');
+                        } else if (index < 15) {
+                            grade.textContent = '4';
+                            grade.classList.add('grade-4');
+                        } else {
+                            grade.textContent = '5';
+                            grade.classList.add('grade-5');
+                        }
+                    });
+                    
+                    // Подсветка выполненных заданий
+                    taskNumbers.forEach((t, i) => {
+                        t.classList.remove('task-number-completed', 'task-number-partial');
+                        if (i <= index) {
+                            if (index < 6) {
+                                t.classList.add('task-number-partial');
+                            } else {
+                                t.classList.add('task-number-completed');
+                            }
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

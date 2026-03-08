@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📋 Элементы содержания ОГЭ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .table-container {
+            padding: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        th {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 15px 12px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.9em;
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9em;
+            vertical-align: top;
+        }
+
+        tr:hover {
+            background: #f8f9ff;
+        }
+
+        .part-header {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .topic-cell {
+            font-weight: 600;
+            color: #333;
+            min-width: 200px;
+        }
+
+        .content-cell {
+            color: #666;
+            line-height: 1.5;
+        }
+
+        .status-not-studied {
+            background: #fff3cd;
+            color: #856404;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .status-need-study {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+
+        .checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+
+        .progress-indicator {
+            width: 100%;
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4facfe;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        @media (max-width: 768px) {
+            table {
+                font-size: 0.8em;
+            }
+            
+            th, td {
+                padding: 8px 10px;
+            }
+            
+            .topic-cell {
+                min-width: 150px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📋 Элементы содержания ОГЭ</h1>
+            <p>Простой трекер изучения тем</p>
+        </div>
+
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-number" id="totalTopics">0</div>
+                <div class="stat-label">Всего тем</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="studiedTopics">0</div>
+                <div class="stat-label">Изучено</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="needStudyTopics">0</div>
+                <div class="stat-label">Нужно изучить</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="progressPercent">0%</div>
+                <div class="stat-label">Прогресс</div>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table id="contentTable">
+                <thead>
+                    <tr>
+                        <th style="width: 50px;">✅</th>
+                        <th style="width: 250px;">Тема</th>
+                        <th>Содержание</th>
+                        <th style="width: 150px;">Статус</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="part-header">
+                        <td colspan="4">📘 Часть 1 - Практико-ориентированные задания</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" data-topic="1-5"></td>
+                        <td class="topic-cell">1–5 Задачи на понимание текста, вычисления, применение формул</td>
+                        <td class="content-cell">
+                            <strong>Числа и вычисления</strong><br>
+                            6 Действия с обыкновенными и десятичными дробями<br>
+                            8 Действия с алгебраическими выражениями
+                        </td>
+                        <td><span class="status-need-study">Необходимо изучить</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" data-topic="6-8"></td>
+                        <td class="topic-cell">Алгебраические выражения</td>
+                        <td class="content-cell">
+                            12 Расчёты по формулам<br>
+                            Уравнения и неравенства
+                        </td>
+                        <td><span class="status-need-study">Необходимо изучить</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" data-topic="9-10"></td>
+                        <td class="topic-cell">Уравнения и неравенства</td>
+                        <td class="content-cell">
+                            9 Решение линейного или квадратного уравнения<br>
+                            13 Решение неравенства или системы неравенств
+                        </td>
+                        <td><span class="status-need-study">Необходимо изучить</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" data-topic="11-14"></td>
+                        <td class="topic-cell">Числовые последовательности</td>
+                        <td class="content-cell">
+                            14 Последовательности, арифметическая и геометрическая прогрессии
+                        </td>
+                        <td><span class="status-need-study">Необходимо изучить</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" data-topic="15-19"></td>
+                        <td class="topic-cell">Функции и графики</td>
+                        <td class="content-cell">
+                            11 Формулы и графики линейных, дробно-рациональных, квадратичных функций<br>
+                            7 Координаты на прямой и плоскости
+                        </td>
+                        <td><span class="status-need-study">Необходимо изучить</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" data-topic="20-25"></td>
+                        <td class="topic-cell">Геометрия</td>
+                        <td class="content-cell">
+                            15 Длина отрезка, величина угла<br>
+                            16 Длина отрезка, величина угла<br>
+                            17 Площадь фигур<br>
+                            18 Геометрия на «клетках»: длины, углы, площади
+                        </td>
+                        <td><span class="status-need-study">Необходимо изучить</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" data-topic="26-27"></td>
+                        <td class="topic-cell">Теоретические вопросы</td>
+                        <td class="content-cell">
+                            19 Теоретические вопросы
+                        </td>
+                        <td><span class="status-need-study">Необходимо изучить</span></td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" data-topic="28-29"></td>
+                        <td class="topic-cell">Статистика и теория вероятностей</td>
+                        <td class="content-cell">
+                            10 Задача на вычисление вероятности
+                        </td>
+                        <td><span class="status-need-study">Необходимо изучить</span></td>
+                    </tr>
+
+                    <tr class="part-header">
+                        <td colspan="4">📗 Часть 2 - Уравнения и неравенства</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" data-topic="30-31"></td>
+                        <td class="topic-cell">Уравнения и неравенства</td>
+                        <td class="content-cell">
+                            20 Уравнения, неравенства, действия со степенями<br>
+                            21 Текстовая задача
+                        </td>
+                        <td><span class="status-need-study">Необходимо изучить</span></td>
+                    </tr>
+
+                    <tr class="part-header">
+                        <td colspan="4">📈 Часть 2 - Функции и графики</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" data-topic="32"></td>
+                        <td class="topic-cell">Функции и графики</td>
+                        <td class="content-cell">
+                            22 Построение графика
+                        </td>
+                        <td><span class="status-need-study">Необходимо изучить</span></td>
+                    </tr>
+
+                    <tr class="part-header">
+                        <td colspan="4">📐 Часть 2 - Геометрия</td>
+                    </tr>
+                    <tr>
+                        <td><input type="checkbox" class="checkbox" data-topic="33-35"></td>
+                        <td class="topic-cell">Геометрия</td>
+                        <td class="content-cell">
+                            23 Длина отрезка, величина угла<br>
+                            24 Задача на доказательство<br>
+                            25 Длина отрезка, величина угла, площадь фигур
+                        </td>
+                        <td><span class="status-need-study">Необходимо изучить</span></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="padding: 30px; text-align: center;">
+            <div class="progress-indicator">
+                <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+            </div>
+            <p style="margin-top: 10px; color: #666;">Общий прогресс изучения</p>
+        </div>
+    </div>
+
+    <script>
+        // Данные о темах
+        const topics = [
+            '1-5', '6-8', '9-10', '11-14', '15-19', '20-25', '26-27', '28-29',
+            '30-31', '32', '33-35'
+        ];
+
+        // Функция обновления статистики
+        function updateStats() {
+            const checkboxes = document.querySelectorAll('.checkbox');
+            const checkedBoxes = document.querySelectorAll('.checkbox:checked');
+            
+            const total = checkboxes.length;
+            const studied = checkedBoxes.length;
+            const needStudy = total - studied;
+            const progress = Math.round((studied / total) * 100);
+            
+            document.getElementById('totalTopics').textContent = total;
+            document.getElementById('studiedTopics').textContent = studied;
+            document.getElementById('needStudyTopics').textContent = needStudy;
+            document.getElementById('progressPercent').textContent = progress + '%';
+            document.getElementById('progressBar').style.width = progress + '%';
+            
+            // Обновление статусов
+            checkboxes.forEach(checkbox => {
+                const row = checkbox.closest('tr');
+                const statusCell = row.querySelector('.status-need-study, .status-not-studied');
+                
+                if (checkbox.checked) {
+                    statusCell.className = 'status-not-studied';
+                    statusCell.textContent = 'Пройдено';
+                } else {
+                    statusCell.className = 'status-need-study';
+                    statusCell.textContent = 'Необходимо изучить';
+                }
+            });
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('.checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', updateStats);
+            });
+            
+            // Загрузка сохраненного прогресса
+            const savedProgress = localStorage.getItem('oge-progress');
+            if (savedProgress) {
+                const progress = JSON.parse(savedProgress);
+                progress.forEach(topicId => {
+                    const checkbox = document.querySelector(`[data-topic="${topicId}"]`);
+                    if (checkbox) checkbox.checked = true;
+                });
+                updateStats();
+            }
+        });
+
+        // Сохранение прогресса
+        window.addEventListener('beforeunload', function() {
+            const checkboxes = document.querySelectorAll('.checkbox:checked');
+            const progress = Array.from(checkboxes).map(cb => cb.dataset.topic);
+            localStorage.setItem('oge-progress', JSON.stringify(progress));
+        });
+    </script>
+</body>
+</html>
