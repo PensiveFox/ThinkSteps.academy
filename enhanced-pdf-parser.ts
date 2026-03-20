@@ -1,5 +1,4 @@
 import fs from 'fs';
-import path from 'path';
 
 // Устанавливаем зависимости: npm install pdf-parse pdfjs-dist
 

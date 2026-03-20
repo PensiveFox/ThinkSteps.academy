@@ -14,7 +14,7 @@ import {
 const router = Router()
 
 // GET /admin/strategy
-router.get('/strategy', async (req, res) => {
+router.get('/strategy', async (_req, res) => {
   try {
     const strategy = await getStrategy()
     res.json(strategy)
@@ -34,7 +34,7 @@ router.patch('/strategy', async (req, res) => {
 })
 
 // GET /admin/skills
-router.get('/skills', async (req, res) => {
+router.get('/skills', async (_req, res) => {
   try {
     const skills = await getSkills()
     res.json(skills)

@@ -1,5 +1,4 @@
 import { PrismaClient } from '@prisma/client'
-import { resolveState } from './src/learning/learningEngine'
 
 const prisma = new PrismaClient()
 
