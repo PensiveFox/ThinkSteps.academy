@@ -12,7 +12,7 @@ credentials/
 
 ## system/
 
-n8n credentials in JSON format:
+n8n credentials in JSON format. The `id` field is used to link credentials to workflow factories.
 
 ```json
 [
@@ -24,6 +24,43 @@ n8n credentials in JSON format:
   }
 ]
 ```
+
+### Telegram
+
+Default credential ID: `telegram-main-bot`
+
+This ID is used by `TelegramHandlerWorkflow` to find the Telegram bot credentials.
+
+```json
+[
+  {
+    "id": "telegram-main-bot",
+    "name": "MyBot",
+    "type": "telegramApi",
+    "data": {
+      "accessToken": "123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+    }
+  }
+]
+```
+
+### Credential ID and WorkflowFactory
+
+Workflow factories (`WorkflowFactory` classes) can define a static `credentialId` property to specify which credential they need. During bootstrap, the system passes all loaded credentials to `createWorkflow()`, and the factory uses its `credentialId` to find the right one.
+
+Example:
+```typescript
+class TelegramHandlerWorkflow extends WorkflowFactory {
+  static credentialId = 'telegram-main-bot'
+  
+  createWorkflow(credentials: CredentialsMap): WorkflowBase {
+    const creds = credentials[TelegramHandlerWorkflow.credentialId]
+    // ...
+  }
+}
+```
+
+To use a different Telegram bot, create a new workflow class with a different `credentialId`.
 
 ## agents/
 

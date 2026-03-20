@@ -1,122 +1,4 @@
-export type NodeId =
-  | 'merge-trigger'
-  | 'get-agent-data'
-  | 'prepare-context'
-  | 'reflection'
-  | 'fetch-mindlogs'
-  | 'merge'
-  | 'merge-context'
-  | 'prepare-agent-input'
-  | 'agent'
-  | 'workflow-trigger'
-  | 'chat-trigger'
-  | 'memory'
-  | 'workflow-output'
-  | 'if-not-streaming'
-  | 'respond-webhook'
-  | 'get-user-by-token'
-  | 'set-auth-context'
-  | 'tool-create-mindlog'
-  | 'tool-update-mindlog'
-  | 'tool-delete-mindlog'
-  | 'tool-search-mindlogs'
-  | 'tool-create-task'
-  | 'tool-update-task'
-  | 'tool-delete-task'
-  | 'tool-search-tasks'
-  | 'tool-create-task-work-log'
-  | 'tool-search-task-work-log'
-  | 'tool-delete-task-work-log'
-  | 'tool-kb-concept'
-  | 'tool-kb-fact'
-  | 'tool-kb-fact-participation'
-  | 'tool-kb-fact-projection'
-  | 'tool-kb-knowledge-space'
-  | 'tool-ex-reflex'
-  | 'tool-ex-reaction'
-  | 'tool-web-search-agent'
-  | 'tool-fetch'
-  | 'tool-read-file'
-  | 'tool-list-files'
-  | 'tool-graphql'
-  | 'tool-get-user-by-token-trigger'
-  | 'tool-get-user-by-token-manual'
-  | 'tool-get-user-by-token-set-test'
-  | 'tool-get-user-by-token-prepare'
-  | 'tool-get-user-by-token-check'
-  | 'tool-get-user-by-token-http'
-  | 'tool-get-user-by-token-set-user'
-  | 'tool-get-user-by-token-set-no-user'
-  | 'tool-get-config-trigger'
-  | 'tool-get-config-manual'
-  | 'tool-get-config-code'
-  | 'tool-fetch-request-trigger'
-  | 'tool-fetch-request-manual'
-  | 'tool-fetch-request-set-test'
-  | 'tool-fetch-request-http'
-  | 'tool-get-user-data-trigger'
-  | 'tool-get-user-data-set-query'
-  | 'tool-get-user-data-manual'
-  | 'tool-get-user-data-http'
-  | 'tool-graphql-request-trigger'
-  | 'tool-graphql-request-parse'
-  | 'tool-graphql-request-manual'
-  | 'tool-graphql-request-set-test'
-  | 'tool-graphql-request-merge-config'
-  | 'tool-graphql-request-http'
-  | 'tool-graphql-request-handle-response'
-  | 'tool-graphql-request-user-trigger'
-  | 'tool-graphql-request-user-parse'
-  | 'tool-graphql-request-user-manual'
-  | 'tool-graphql-request-user-set-test'
-  | 'tool-graphql-request-user-merge-config'
-  | 'tool-graphql-request-user-http'
-  | 'tool-graphql-request-user-handle-response'
-  | 'tool-read-file-trigger'
-  | 'tool-read-file-manual'
-  | 'tool-read-file-set-test'
-  | 'tool-read-file-execute'
-  | 'tool-list-files-trigger'
-  | 'tool-list-files-manual'
-  | 'tool-list-files-set-test'
-  | 'tool-list-files-execute'
-  | 'loop-runner-trigger'
-  | 'loop-runner-execute'
-  | 'loop-runner-wait'
-  | 'loop-handler-trigger'
-  | 'loop-handler-wait'
-  | 'loop-handler-code'
-  | 'mcp-server-trigger'
-  | 'mcp-server-check-token'
-  | 'mcp-server-get-user'
-  | 'mcp-server-set-user'
-  | 'mcp-server-set-no-user'
-  | 'mcp-server-call-agent'
-  | 'mcp-server-mcp-trigger'
-  | 'mcp-server-send-message'
-  | 'error-handler-trigger'
-  | 'error-handler-set-data'
-  | 'error-handler-sticky-note'
-  | 'error-handler-log'
-  | 'telegram-handler-trigger'
-  | 'telegram-handler-call-agent'
-  | 'telegram-handler-send-message'
-  | 'telegram-handler-speech-to-text'
-  | 'telegram-handler-voice-or-text'
-  | 'telegram-handler-get-voice'
-  | 'telegram-handler-sticky-note'
-  | 'telegram-handler-if'
-  | 'test-execute-script-trigger'
-  | 'test-execute-script-execute'
-  | 'verify-token-trigger'
-  | 'verify-token-graphql'
-  | 'verify-token-set-output'
-  | 'reflection-trigger'
-  | 'reflection-manual'
-  | 'reflection-set-test'
-  | 'reflection-process'
-
-const nodeCoordinates: Record<NodeId, [number, number]> = {
+const nodeCoordinates = {
   'merge-trigger': [-1664, 256],
   'get-agent-data': [-1344, 144],
   'prepare-context': [-752, 288],
@@ -217,13 +99,14 @@ const nodeCoordinates: Record<NodeId, [number, number]> = {
   'error-handler-sticky-note': [-208, 160],
   'error-handler-log': [704, 304],
   'telegram-handler-trigger': [-96, 304],
+  'telegram-handler-should-respond': [128, 304],
   'telegram-handler-call-agent': [1056, 320],
   'telegram-handler-send-message': [1312, 320],
   'telegram-handler-speech-to-text': [816, 208],
-  'telegram-handler-voice-or-text': [224, 304],
-  'telegram-handler-get-voice': [576, 208],
+  'telegram-handler-voice-or-text': [352, 304],
+  'telegram-handler-get-voice': [704, 208],
   'telegram-handler-sticky-note': [192, 128],
-  'telegram-handler-if': [384, 304],
+  'telegram-handler-if': [512, 304],
   'test-execute-script-trigger': [-200, 304],
   'test-execute-script-execute': [0, 304],
   'verify-token-trigger': [0, 300],
@@ -233,14 +116,16 @@ const nodeCoordinates: Record<NodeId, [number, number]> = {
   'reflection-manual': [-400, 500],
   'reflection-set-test': [0, 500],
   'reflection-process': [200, 300],
-}
+} as const
+
+export type NodeId = keyof typeof nodeCoordinates
 
 export function getNodeCoordinates(nodeId: NodeId): [number, number] {
   const coords = nodeCoordinates[nodeId]
   if (!coords) {
     throw new Error(`Unknown node ID: ${nodeId}`)
   }
-  return coords
+  return [coords[0], coords[1]]
 }
 
 export function getNodeCoordinatesOffset(

@@ -5,6 +5,7 @@ import { n8nConfig } from '../config'
 import { importWorkflows } from './importWorkflows'
 import { importAgentCredentials } from './authenticateAgent'
 import { n8nApiRequest } from './n8nApiRequest'
+import { CredentialsMap } from '../workflows/interfaces'
 
 const CREDENTIALS_DIR = n8nConfig.credentialsDir
 
@@ -80,16 +81,18 @@ async function createOwner(env: BootstrapEnv): Promise<string | null> {
   return null
 }
 
-async function importCredentials(cookies: string): Promise<void> {
+async function importCredentials(cookies: string): Promise<CredentialsMap> {
+  const credentialsMap: CredentialsMap = {}
   const systemDir = path.join(CREDENTIALS_DIR, 'system')
+
   if (!fs.existsSync(systemDir)) {
-    return
+    return credentialsMap
   }
 
   const credFiles = fs.readdirSync(systemDir).filter((f) => f.endsWith('.json'))
 
   if (credFiles.length === 0) {
-    return
+    return credentialsMap
   }
 
   console.log('[bootstrap] Importing system credentials...')
@@ -106,6 +109,9 @@ async function importCredentials(cookies: string): Promise<void> {
         try {
           await n8nApiRequest('POST', '/rest/credentials', cred, cookies)
           console.log(`[bootstrap] Imported credential: ${cred.name}`)
+
+          const credKey = cred.id || `system/${file}/${cred.name || 'default'}`
+          credentialsMap[credKey] = cred
         } catch (err) {
           console.error(
             `[bootstrap] Failed to import credential ${cred.name}:`,
@@ -117,6 +123,8 @@ async function importCredentials(cookies: string): Promise<void> {
       console.error(`[bootstrap] Failed to parse ${file}:`, err)
     }
   }
+
+  return credentialsMap
 }
 
 async function cleanupCredentials(): Promise<void> {
@@ -188,9 +196,9 @@ export async function runBootstrap(): Promise<void> {
     return
   }
 
-  await importCredentials(cookies)
+  const credentialsMap = await importCredentials(cookies)
   await importAgentCredentials(cookies)
-  await importWorkflows(cookies)
+  await importWorkflows(cookies, credentialsMap)
   await cleanupCredentials()
 
   console.log('[bootstrap] Completed')

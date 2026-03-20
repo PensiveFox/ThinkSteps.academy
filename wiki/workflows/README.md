@@ -1,14 +1,30 @@
-# Workflow Factory
+# Workflows
 
-Generates n8n workflows from TypeScript definitions.
+n8n workflow definitions in TypeScript.
+
+## Documentation
+
+- [Bootstrap](./bootstrap/README.md) — how workflows are loaded and imported
+- [Helpers](./helpers/README.md) — helper functions for creating tool nodes
+- [Loop Runner](./loop-runner.md) — infinite loop pattern
 
 ## Location
 
 ```
 server/n8n/workflows/
-├── agent-factory/           # Core factory logic
+├── interfaces.ts            # WorkflowBase, WorkflowFactory, CredentialsMap
+├── helpers/                 # Helper functions
+├── agent-factory/           # Core agent factory logic
 ├── agent-chat/              # Chat Agent
-└── agent-web-search/        # Web Search Agent (Perplexity)
+├── agent-web-search/        # Web Search Agent (Perplexity)
+├── telegram-handler/        # Telegram bot handler (WorkflowFactory)
+├── mcp-server/              # MCP server handler
+├── loop-runner/             # Infinite loop runner
+├── loop-handler/            # Loop business logic
+├── error-handler/           # Error handling workflow
+├── reflection/              # Agent reflection workflow
+├── tool-*/                  # Tool workflows
+└── verify-token/            # Token verification
 ```
 
 ## Key Options

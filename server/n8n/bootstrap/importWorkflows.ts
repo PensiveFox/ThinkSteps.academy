@@ -2,10 +2,17 @@
 import fs from 'fs'
 import path from 'path'
 import { n8nApiRequest } from './n8nApiRequest'
+import {
+  isWorkflowFactoryClass,
+  type CredentialsMap,
+} from '../workflows/interfaces'
 
 const WORKFLOWS_DIR = path.join(__dirname, '../workflows')
 
-async function loadWorkflow(entry: string): Promise<object[]> {
+async function loadWorkflow(
+  entry: string,
+  credentialsMap: CredentialsMap,
+): Promise<object[]> {
   const fullPath = path.join(WORKFLOWS_DIR, entry)
   const stat = fs.statSync(fullPath)
 
@@ -20,6 +27,12 @@ async function loadWorkflow(entry: string): Promise<object[]> {
     if (fs.existsSync(indexTs) || fs.existsSync(indexJs)) {
       const module = await import(fullPath)
       const exported = module.default || module
+
+      if (isWorkflowFactoryClass(exported)) {
+        const factory = new exported()
+        return [await factory.createWorkflow(credentialsMap)]
+      }
+
       if (Array.isArray(exported)) {
         return exported.filter(Boolean)
       }
@@ -155,7 +168,10 @@ async function activateWorkflow(
   }
 }
 
-export async function importWorkflows(cookies: string): Promise<void> {
+export async function importWorkflows(
+  cookies: string,
+  credentialsMap: CredentialsMap = {},
+): Promise<void> {
   if (!fs.existsSync(WORKFLOWS_DIR)) {
     return
   }
@@ -172,7 +188,7 @@ export async function importWorkflows(cookies: string): Promise<void> {
 
   for (const entry of entries) {
     try {
-      const workflows = await loadWorkflow(entry)
+      const workflows = await loadWorkflow(entry, credentialsMap)
       if (workflows.length === 0) {
         continue
       }

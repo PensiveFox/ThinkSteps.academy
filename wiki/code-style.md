@@ -47,6 +47,10 @@ Type assertions hide potential bugs and break type safety.
 ```tsx
 const id = taskId as string
 const variables = getTaskQueryVariables(taskId as string)
+
+// External data without validation
+const credId = credentials.id as string
+const credName = credentials.name as string
 ```
 
 ### Good
@@ -60,6 +64,19 @@ if (taskId) {
 
 // Or use conditional expression
 variables: taskId ? getTaskQueryVariables(taskId) : undefined
+```
+
+For external data (credentials, API responses, configs), always validate explicitly:
+
+```tsx
+const credId = credentials.id
+const credName = credentials.name
+if (typeof credId !== 'string' || !credId) {
+  throw new Error(`Missing 'id' field in credentials`)
+}
+if (typeof credName !== 'string' || !credName) {
+  throw new Error(`Missing 'name' field in credentials`)
+}
 ```
 
 If a function requires a specific type, the caller must ensure the value matches that type before calling.
